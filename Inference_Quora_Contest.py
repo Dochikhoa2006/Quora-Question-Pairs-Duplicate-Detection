@@ -47,7 +47,7 @@ def quora_testing_preparation ():
     except:
         start_row_quora_test = 0
 
-    number_of_rows_for_testing = 5000
+    number_of_rows_for_testing = 10
     end_row_quora_test = start_row_quora_test + number_of_rows_for_testing
     
     if end_row_quora_test >= quora_test.shape[0]:
