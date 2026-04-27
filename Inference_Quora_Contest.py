@@ -21,7 +21,7 @@ def LightGBM_process (quora_test):
 
     from LightGBM_lexical import LightGBM_Lexical
     
-    LightGBM = joblib.load ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/LightGBM_model.pkl')
+    LightGBM = joblib.load ('LightGBM_model.pkl')
 
     LightGBM_predictions = LightGBM.make_predictions (quora_test)
     return LightGBM_predictions
@@ -31,18 +31,18 @@ def SBERT_process (quora_test):
     from SBERT_embedding import SBERT_Embedding
 
     SBERT = SBERT_Embedding ()
-    SBERT.load_model ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/PEFT_model')
+    SBERT.load_model ('PEFT_model')
 
     SBERT_predictions = SBERT.predict (quora_test).cpu ().numpy ()
     return SBERT_predictions
 
 def quora_testing_preparation ():
 
-    quora_test = pd.read_csv ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/quora-question-pairs/test.csv')
-    quora_result = pd.read_csv ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/quora-question-pairs/sample_submission.csv')
+    quora_test = pd.read_csv ('quora-question-pairs/test.csv')
+    quora_result = pd.read_csv ('quora-question-pairs/sample_submission.csv')
 
     try:
-        rows_completed = joblib.load ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/rows_completed.pkl')
+        rows_completed = joblib.load ('rows_completed.pkl')
         start_row_quora_test = rows_completed + 1 
     except:
         start_row_quora_test = 0
@@ -62,7 +62,7 @@ def quora_testing_preparation ():
 def get_testing_result_tracker ():
 
     try:
-        testing_result_tracker = joblib.load ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/testing_result_tracker.pkl')
+        testing_result_tracker = joblib.load ('testing_result_tracker.pkl')
     except:
         testing_result_tracker = np.array ([])
 
@@ -71,7 +71,7 @@ def get_testing_result_tracker ():
 
 SBERT_weight_selected = 0.45
 LightGBM_weight_selected = 0.55
-threshold_label_decision = joblib.load ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/threshold_label_decision.pkl')
+threshold_label_decision = joblib.load ('threshold_label_decision.pkl')
 
 
 if __name__ == '__main__':
@@ -94,6 +94,6 @@ if __name__ == '__main__':
 
     print (f'After testing {new_rows_completed} samples, the models result in {accuracy_percentage}% accuracy')
 
-    joblib.dump (accuracy_percentage, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/accuracy_until_rows_competed.pkl')
-    joblib.dump (new_testing_result_tracker, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/testing_result_tracker.pkl')
-    joblib.dump (new_rows_completed, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/rows_completed.pkl')
+    joblib.dump (accuracy_percentage, 'accuracy_until_rows_competed.pkl')
+    joblib.dump (new_testing_result_tracker, 'testing_result_tracker.pkl')
+    joblib.dump (new_rows_completed, 'rows_completed.pkl')

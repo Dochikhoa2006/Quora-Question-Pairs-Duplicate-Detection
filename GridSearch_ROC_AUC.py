@@ -73,7 +73,7 @@ def plotting (ROC_info):
     plt.savefig ('ROC_AUC_Grid_Search.png')
 
 
-dataset = pd.read_csv ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/quora-question-pairs/train.csv')
+dataset = pd.read_csv ('quora-question-pairs/train.csv')
 train_test_split = joblib.load ('train_test_split.pkl')
 test_indices_list = train_test_split['test_dataset']
 

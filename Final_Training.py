@@ -3,7 +3,7 @@ from LightGBM_lexical import LightGBM_Lexical
 import pandas as pd
 import joblib
 
-dataset = pd.read_csv ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/quora-question-pairs/train.csv')
+dataset = pd.read_csv ('quora-question-pairs/train.csv')
 
 SBERT = SBERT_Embedding ()
 SBERT.fine_tune (dataset)

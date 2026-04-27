@@ -30,7 +30,7 @@ class SBERT_Embedding:
     
     def save_model (self):
 
-        self.LoRA.save_pretrained ('./PEFT_model')
+        self.LoRA.save_pretrained ('PEFT_model')
             
     def load_model (self, LoRA_path):
 
@@ -116,7 +116,7 @@ class SBERT_Embedding:
 
 if __name__ == '__main__':
 
-    dataset = pd.read_csv ('/Users/chikhoado/Desktop/PROJECTS/Quora Question/quora-question-pairs/train.csv')
+    dataset = pd.read_csv ('quora-question-pairs/train.csv')
     train_test_split = joblib.load ('train_test_split.pkl')
     train_indices_list = train_test_split['train_dataset']
     test_indices_list = train_test_split['test_dataset']
