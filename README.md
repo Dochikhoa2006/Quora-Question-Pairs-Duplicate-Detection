@@ -30,6 +30,7 @@ The dataset is derived from the Quora Question Pairs competition.
 
 | File Name | Description |
 |---|---|
+| `PEFT_model` | **LoRA** from fine-tuning SBERT. |
 | `SBERT_embedding.py` | Fine-tunes `all-mpnet-base-v2` using **LoRA**. Implements a multi-loss strategy (MNRL, Triplet, Cosine, and Softmax) to optimize embeddings. |
 | `LightGBM_lexical.py` | Extracts 13 lexical features (Fuzzy ratios, BM25, TF-IDF) and trains a LightGBM GOSS classifier. |
 | `GridSearch_ROC_AUC.py` | Optimizes the ensemble weights ($w_1, w_2$) by iterating through weight combinations to maximize AUC. |
