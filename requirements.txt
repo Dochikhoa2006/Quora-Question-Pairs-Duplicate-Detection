@@ -1,0 +1,8 @@
+sentence-transformers
+lightgbm
+pandas
+joblib
+matplotlib
+numpy
+torch
+peft
