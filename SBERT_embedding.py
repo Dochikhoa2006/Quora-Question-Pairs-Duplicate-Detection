@@ -138,15 +138,3 @@ if __name__ == '__main__':
 
     SBERT_Embedding_score = np.array (SBERT_Embedding_score)
     joblib.dump (SBERT_Embedding_score, 'SBERT_Embedding_Score.pkl')
-
-
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas numpy sentence_transformers peft torch 
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/SBERT_embedding.py'

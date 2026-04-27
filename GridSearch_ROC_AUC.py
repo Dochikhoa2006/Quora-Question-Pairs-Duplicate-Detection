@@ -118,19 +118,3 @@ if __name__ == '__main__':
         ROC_graph.append ((ROC_graph_i, AUC_graph_i, (SBERT_weight, LightGBM_weight)))
 
     plotting (ROC_graph)
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas numpy matplotlib 
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/GridSearch_ROC_AUC.py'
-
-
-
-
-
-

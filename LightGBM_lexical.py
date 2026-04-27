@@ -231,16 +231,3 @@ if __name__ == '__main__':
     
     LightGBM_Lexical_score = np.array (LightGBM_Lexical_score)
     joblib.dump (LightGBM_Lexical_score, 'LightGBM_Lexical_Score.pkl')
-
-
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas numpy nltk regex contractions python-Levenshtein scikit-learn rank_bm25 lightgbm
-# python -c "import nltk; nltk.download('wordnet'); nltk.download('omw-1.4')"
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/LightGBM_lexical.py'

@@ -6,4 +6,6 @@ __pycache__/
 *.txt
 *.csv
 *.log
+
 quora-question-pairs
+run_script

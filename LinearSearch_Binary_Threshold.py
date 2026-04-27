@@ -62,13 +62,3 @@ for index in np.arange (0.01, 1, 0.01):
 
 best_binary_classification_threshold = round (best_binary_classification_threshold, 2)
 joblib.dump (best_binary_classification_threshold, 'threshold_label_decision.pkl')
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas numpy
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/LinearSearch_Binary_Threshold.py'

@@ -13,13 +13,3 @@ LightGBM.train (dataset)
 
 SBERT.save_model ()
 joblib.dump (LightGBM, 'LightGBM_model.pkl')
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas 
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/Final_Training.py'

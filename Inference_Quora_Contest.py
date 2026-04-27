@@ -97,16 +97,3 @@ if __name__ == '__main__':
     joblib.dump (accuracy_percentage, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/accuracy_until_rows_competed.pkl')
     joblib.dump (new_testing_result_tracker, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/testing_result_tracker.pkl')
     joblib.dump (new_rows_completed, '/Users/chikhoado/Desktop/PROJECTS/Quora Question/rows_completed.pkl')
-
-
-
-
-
-
-
-# cd '/Users/chikhoado/Desktop/PROJECTS/Quora Question'
-# /opt/homebrew/bin/python3.12 -m venv .venv
-# source .venv/bin/activate
-# pip install pandas numpy
-# python '/Users/chikhoado/Desktop/PROJECTS/Quora Question/Inference_Quora_Contest.py'
-
