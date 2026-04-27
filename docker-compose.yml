@@ -1,0 +1,7 @@
+services:
+    app:
+        image: quora-question-pair
+        volumes:
+        - .:/app  
+        working_dir: /app
+        command: python Inference_Quora_Contest.py
