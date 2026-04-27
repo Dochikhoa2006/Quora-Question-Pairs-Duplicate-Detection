@@ -73,7 +73,7 @@ The ROC-AUC graph illustrates the performance of various weight distributions. B
 | **Data Processing** | Pandas, NumPy, Joblib |
 | **NLP** | NLTK (Lemmatizer), Contractions, Regex, Levenshtein |
 
-## How to Run
+## Set Up
 
 1.  **Clone the Repository**:
     ```bash
@@ -81,38 +81,10 @@ The ROC-AUC graph illustrates the performance of various weight distributions. B
     git clone https://github.com/Dochikhoa2006/Quora-Question-Pairs-Duplicate-Detection.git
     ```
 
-2.  **Install Dependencies**:
-    Make sure you have Python and the necessary libraries installed:
-    ```bash
-    pip install pandas numpy sentence_transformers peft torch nltk python-Levenshtein scikit-learn rank_bm25 lightgbm
-    ```
-
-3.  **Cross-Validation & Optimization**:
-    * To run SBERT Model:
+2.  **Docker**:
+    * Container Instantiation / Orchestration:
         ```bash
-        python SBERT_embedding.py
-        ```
-    * To run LightGBM Model:
-        ```bash
-        python LightGBM_lexical.py
-    * To visualize performance:
-        ```bash
-        python GridSearch_ROC_AUC.py
-        ```
-    * To finalize labeling threshold:
-        ```bash
-        python LinearSearch_Binary_Threshold.py
-
-4.  **Training**:
-    * To collect trained models:
-        ```bash
-        python Final_Training.py
-        ```
-
-5.  **Inference (Recommendation)**:
-    * To evaluate models:
-        ```bash
-        python Inference_Quora_Contest.py
+        docker-compose up --build
         ```
 
 ## License
