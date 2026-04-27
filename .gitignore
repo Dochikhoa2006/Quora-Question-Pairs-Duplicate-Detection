@@ -1,12 +1,9 @@
 __pycache__/
-*.py[cod]
-*$py.class
 .venv/
-venv/
-env/
-.env
-.vscode/
+.DS_Store
 
 *.pkl
 *.txt
 *.csv
+*.log
+quora-question-pairs
