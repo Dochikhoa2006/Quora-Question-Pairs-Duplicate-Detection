@@ -1,9 +1,20 @@
-FROM python:3.10-slim
+# syntax=docker/dockerfile:1.7
+FROM python:3.12.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app
+
 WORKDIR /app
-RUN apt-get update && apt-get install -y build-essential libgomp1 && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN python -c "import nltk; nltk.download('wordnet')"
-COPY . .
-RUN mkdir -p quora-question-pairs
-CMD ["python", "Inference_Quora_Contest.py"]
+COPY requirements.txt pyproject.toml README.md LICENSE ./
+COPY src ./src
+RUN python -m pip install --requirement requirements.txt \
+    && python -m pip install --no-deps .
+
+USER 10001:10001
+ENTRYPOINT ["qqdup"]
+CMD ["--help"]

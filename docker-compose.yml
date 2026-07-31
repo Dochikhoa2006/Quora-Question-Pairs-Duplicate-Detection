@@ -1,7 +1,18 @@
 services:
-    app:
-        image: quora-question-pair
-        volumes:
-        - .:/app  
-        working_dir: /app
-        command: python Inference_Quora_Contest.py
+  qqdup:
+    build:
+      context: .
+    image: quora-duplicate-detection:local
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    volumes:
+      - ./data:/data:ro
+      - ./artifacts:/artifacts
+      - ./outputs:/outputs
+    command:
+      - --help

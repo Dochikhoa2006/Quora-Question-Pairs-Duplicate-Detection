@@ -1,0 +1,82 @@
+{
+  "report_schema_version": 1,
+  "report_status": "release-candidate aggregate evaluation",
+  "generated_date": "2026-07-31",
+  "software_version": "2.0.0",
+  "source_revision_note": "Generated from the reviewed v2 working tree before its public release commit; bind this report to the release SHA before tagging.",
+  "dataset": {
+    "name": "Quora Question Pairs labeled training data",
+    "rows": 404290,
+    "positive_rows": 149263,
+    "positive_rate": 0.369197853026293,
+    "missing_question1": 1,
+    "missing_question2": 2,
+    "normalized_fingerprint_sha256": "c0ddfee0b0a0c2f7f175973bd28026470ba2afce4e4b2d6f742e46011c604dfe",
+    "raw_data_distributed": false
+  },
+  "protocol": {
+    "split_strategy": "pair-level stratified holdout",
+    "random_seed": 42,
+    "train_rows": 283002,
+    "validation_rows": 60644,
+    "test_rows": 60644,
+    "validation_use": "fit lexical probability calibration and select F1 threshold",
+    "test_use": "one final local evaluation after model selection",
+    "competition_test_labels_used": false,
+    "known_leakage_limit": "The same question may occur in multiple pair-level partitions."
+  },
+  "model": {
+    "kind": "lexical logistic baseline",
+    "feature_count": 14,
+    "semantic_component": false,
+    "tfidf_analyzer": "character word-boundary n-grams",
+    "tfidf_ngram_range": [3, 5],
+    "tfidf_max_features": 50000,
+    "decision_comparison": "probability >= threshold",
+    "threshold_selection_metric": "f1"
+  },
+  "validation": {
+    "rows": 60644,
+    "positive_rate": 0.369203878372139,
+    "threshold": 0.23,
+    "log_loss": 0.5321747033150153,
+    "brier_score": 0.18161579024297697,
+    "roc_auc": 0.7883994050206662,
+    "average_precision": 0.6251269295458382,
+    "accuracy": 0.6724325572191808,
+    "balanced_accuracy": 0.7203875155448223,
+    "precision": 0.53327359460243,
+    "recall": 0.9037070120589549,
+    "f1": 0.6707440372598744,
+    "confusion_matrix_tn_fp_fn_tp": [[20545, 17709], [2156, 20234]]
+  },
+  "test": {
+    "rows": 60644,
+    "positive_rate": 0.369203878372139,
+    "threshold": 0.23,
+    "log_loss": 0.5300233937677236,
+    "brier_score": 0.18071461516812962,
+    "roc_auc": 0.7905244056015136,
+    "average_precision": 0.629857738238917,
+    "accuracy": 0.6748565398060814,
+    "balanced_accuracy": 0.7226885788892388,
+    "precision": 0.5352711336395797,
+    "recall": 0.9055381866904868,
+    "f1": 0.6728280347779917,
+    "confusion_matrix_tn_fp_fn_tp": [[20651, 17603], [2115, 20275]]
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "macOS 15.7.4 arm64",
+    "numpy": "2.4.4",
+    "pandas": "2.3.3",
+    "scipy": "1.17.1",
+    "scikit_learn": "1.8.0"
+  },
+  "artifact": {
+    "distributed": false,
+    "serialization": "JSON and NPZ with allow_pickle=False",
+    "manifest_sha256": "bb9a5c7ac050ca18983e8ebf747ea23aa4e4259b1415f5fd7fc5866a55e8f201",
+    "model_npz_sha256": "0e23637ca5e7d309b542a4c7010f35085a80a1407a2b9aa54b0f177a6024f2da"
+  }
+}

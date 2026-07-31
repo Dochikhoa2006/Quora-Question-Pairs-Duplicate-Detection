@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata below and cite the
+  Quora Question Pairs dataset separately under its applicable terms.
+title: Quora Question Pairs Duplicate Detection
+type: software
+authors:
+  - family-names: Do
+    given-names: Chi Khoa
+    email: dochikhoa2006@gmail.com
+repository-code: https://github.com/Dochikhoa2006/Quora-Question-Pairs-Duplicate-Detection
+url: https://github.com/Dochikhoa2006/Quora-Question-Pairs-Duplicate-Detection
+version: 2.0.0
+date-released: 2026-07-31
+license: CC-BY-4.0
+keywords:
+  - duplicate-question-detection
+  - natural-language-processing
+  - sentence-transformers
+  - probability-calibration
+  - reproducible-machine-learning

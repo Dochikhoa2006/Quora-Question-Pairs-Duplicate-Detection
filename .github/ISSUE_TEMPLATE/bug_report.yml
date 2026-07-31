@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible defect in code, documentation, or packaging.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not attach private questions, credentials, datasets, checkpoints, or
+        pickle files. Use synthetic examples whenever possible.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest commands or synthetic input that reproduces the issue.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python, package version or Git SHA, and Docker details if relevant.
+      placeholder: |
+        OS:
+        Python:
+        Git SHA:
+        Installation method:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Remove paths, tokens, user text, and other sensitive values.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I removed private data and credentials.
+          required: true
+        - label: I can reproduce this on the current main branch.
+          required: true
