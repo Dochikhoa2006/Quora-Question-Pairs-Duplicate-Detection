@@ -45,7 +45,7 @@ Changelog = "https://github.com/Dochikhoa2006/Quora-Question-Pairs-Duplicate-Det
 
 [project.optional-dependencies]
 semantic = [
-  "accelerate==1.12.0",
+  "accelerate==1.14.0",
   "datasets==4.8.4",
   "peft==0.18.1",
   "sentence-transformers==5.4.0",
