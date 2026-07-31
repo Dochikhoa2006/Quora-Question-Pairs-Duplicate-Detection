@@ -52,7 +52,7 @@ semantic = [
   "torch==2.13.0",
 ]
 dev = [
-  "bandit==1.9.2",
+  "bandit==1.9.4",
   "pip-audit==2.9.0",
   "pytest==9.0.2",
   "pytest-cov==7.0.0",
