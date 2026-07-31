@@ -53,7 +53,7 @@ jobs:
           python -m venv /tmp/qqdup-wheel-check
           /tmp/qqdup-wheel-check/bin/python -m pip install dist/*.whl
           /tmp/qqdup-wheel-check/bin/qqdup --help
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: quora-duplicate-detection-wheel
           path: dist/*.whl
