@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -16,6 +18,21 @@ from quora_duplicate_detection.features import FEATURE_NAMES, PairFeatureExtract
 from quora_duplicate_detection.lexical import LexicalModel
 
 SCHEMA_VERSION = 1
+PAYLOAD_FILES = frozenset(
+    {"model.npz", "vocabulary.json", "evaluation.json", "split_assignments.csv"}
+)
+ARRAY_NAMES = frozenset(
+    {
+        "tfidf_idf",
+        "lexical_scaler_mean",
+        "lexical_scaler_scale",
+        "lexical_coefficients",
+        "lexical_intercept",
+        "fusion_coefficients",
+        "fusion_intercept",
+    }
+)
+MAX_ARRAY_ARCHIVE_BYTES = 128 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -31,6 +48,53 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _verify_payloads(root: Path, files: object) -> None:
+    if not isinstance(files, dict) or set(files) != PAYLOAD_FILES:
+        raise ValueError("artifact file hash list does not match the schema")
+    for filename in sorted(PAYLOAD_FILES):
+        expected_hash = files[filename]
+        if (
+            not isinstance(expected_hash, str)
+            or re.fullmatch(r"[0-9a-f]{64}", expected_hash) is None
+        ):
+            raise ValueError(f"invalid artifact digest: {filename}")
+        file_path = root / filename
+        if file_path.is_symlink() or not file_path.is_file():
+            raise ValueError(f"artifact payload must be a regular file: {filename}")
+        try:
+            actual_hash = _sha256(file_path)
+        except OSError as exc:
+            raise ValueError(f"unable to read artifact payload: {filename}") from exc
+        if actual_hash != expected_hash:
+            raise ValueError(f"artifact integrity check failed: {filename}")
+
+
+def _load_numeric_arrays(path: Path) -> dict[str, np.ndarray]:
+    expected_members = {f"{name}.npy" for name in ARRAY_NAMES}
+    try:
+        with zipfile.ZipFile(path) as archive:
+            members = archive.infolist()
+            if (
+                len(members) != len(expected_members)
+                or {m.filename for m in members} != expected_members
+            ):
+                raise ValueError("artifact array set does not match the schema")
+            if sum(member.file_size for member in members) > MAX_ARRAY_ARCHIVE_BYTES:
+                raise ValueError("artifact numeric arrays exceed the size limit")
+        with np.load(path, allow_pickle=False) as stored:
+            if len(stored.files) != len(ARRAY_NAMES) or set(stored.files) != ARRAY_NAMES:
+                raise ValueError("artifact array set does not match the schema")
+            arrays = {}
+            for name in ARRAY_NAMES:
+                value = stored[name]
+                if value.dtype.kind not in "fiu":
+                    raise ValueError(f"artifact array is not numeric: {name}")
+                arrays[name] = np.asarray(value, dtype=np.float64)
+            return arrays
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise ValueError("invalid artifact numeric archive") from exc
 
 
 @dataclass(frozen=True)
@@ -119,6 +183,8 @@ def save_artifact(
 def load_artifact(path: str | Path) -> LoadedArtifact:
     root = Path(path)
     manifest_path = root / "manifest.json"
+    if manifest_path.is_symlink():
+        raise ValueError("artifact manifest must be a regular file")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -133,13 +199,7 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
     if manifest.get("feature_names") != list(FEATURE_NAMES):
         raise ValueError("artifact feature schema does not match this package")
 
-    files = manifest.get("files")
-    if not isinstance(files, dict):
-        raise ValueError("artifact file hashes are missing")
-    for filename, expected_hash in files.items():
-        file_path = root / filename
-        if not file_path.is_file() or _sha256(file_path) != expected_hash:
-            raise ValueError(f"artifact integrity check failed: {filename}")
+    _verify_payloads(root, manifest.get("files"))
 
     try:
         vocabulary_raw = json.loads((root / "vocabulary.json").read_text(encoding="utf-8"))
@@ -151,19 +211,7 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
     if sorted(vocabulary.values()) != list(range(len(vocabulary))):
         raise ValueError("artifact vocabulary indices must be contiguous")
 
-    with np.load(root / "model.npz", allow_pickle=False) as stored:
-        required_arrays = {
-            "tfidf_idf",
-            "lexical_scaler_mean",
-            "lexical_scaler_scale",
-            "lexical_coefficients",
-            "lexical_intercept",
-            "fusion_coefficients",
-            "fusion_intercept",
-        }
-        if set(stored.files) != required_arrays:
-            raise ValueError("artifact array set does not match the schema")
-        arrays = {name: np.asarray(stored[name], dtype=np.float64) for name in stored.files}
+    arrays = _load_numeric_arrays(root / "model.npz")
 
     vectorizer = manifest.get("vectorizer", {})
     ngram_range_raw = vectorizer.get("ngram_range")

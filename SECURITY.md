@@ -22,6 +22,9 @@ mitigation. Do not include real Quora data or credentials.
 - Artifact files are checked against SHA-256 digests in the manifest. This
   detects accidental corruption but is not a digital signature and does not
   establish publisher authenticity.
+- The loader accepts only the four declared payload names, rejects symlinked
+  files and unexpected or oversized NPZ members, and checks numeric array types
+  before constructing a model.
 - Dataset, output, checkpoint, environment, and credential files are ignored.
 - The Docker image runs as an unprivileged user. The Compose service drops Linux
   capabilities, prevents privilege escalation, and uses a read-only root

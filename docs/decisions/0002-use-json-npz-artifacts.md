@@ -13,7 +13,9 @@ clone also depended on ignored pickle files with undocumented provenance.
 Persist declarative metadata and vocabulary as JSON and numeric parameters as a
 fixed-name NPZ archive. Load NPZ with `allow_pickle=False`. Validate schema,
 feature names, component names, vocabulary indices, parameter shapes and
-finiteness, decision direction, and payload hashes.
+finiteness, decision direction, and payload hashes. Restrict manifest file
+names and NPZ members to the exact schema; reject symlinked payloads and
+oversized numeric archives before deserialization.
 
 ## Consequences
 
