@@ -18,7 +18,7 @@ Priorities can change when evidence or user needs change.
 
 - [x] Add optional question-disjoint splitting using normalized question components
 - [ ] Add repeated grouped evaluation with uncertainty summaries
-- [ ] Add calibration curves and expected calibration error
+- [x] Add reliability-bin data and expected calibration error to labeled reports
 - [ ] Add privacy-safe slice/error analysis tooling
 - [ ] Publish one immutable aggregate benchmark report and completed model card
 

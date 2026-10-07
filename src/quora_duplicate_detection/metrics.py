@@ -19,16 +19,65 @@ from sklearn.metrics import (
 )
 
 
+def calibration_summary(
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    *,
+    bins: int = 10,
+) -> dict[str, Any]:
+    """Return fixed-width reliability bins and count-weighted calibration error."""
+    labels = np.asarray(labels)
+    probabilities = np.asarray(probabilities, dtype=np.float64)
+    if labels.ndim != 1 or labels.shape != probabilities.shape:
+        raise ValueError("labels and probabilities must be one-dimensional with the same shape")
+    if len(labels) == 0:
+        raise ValueError("calibration requires at least one labeled row")
+    if not np.isin(labels, [0, 1]).all():
+        raise ValueError("labels must contain only 0 and 1")
+    if not np.isfinite(probabilities).all() or ((probabilities < 0) | (probabilities > 1)).any():
+        raise ValueError("probabilities must be finite values between 0 and 1")
+    if isinstance(bins, bool) or not isinstance(bins, int) or bins < 1:
+        raise ValueError("bins must be a positive integer")
+
+    bin_ids = np.minimum((probabilities * bins).astype(np.int64), bins - 1)
+    counts = np.bincount(bin_ids, minlength=bins)
+    probability_sums = np.bincount(bin_ids, weights=probabilities, minlength=bins)
+    label_sums = np.bincount(bin_ids, weights=labels, minlength=bins)
+    reliability = []
+    weighted_error = 0.0
+    for index, count in enumerate(counts):
+        mean_probability = float(probability_sums[index] / count) if count else None
+        observed_rate = float(label_sums[index] / count) if count else None
+        if count:
+            weighted_error += count * abs(mean_probability - observed_rate)
+        reliability.append(
+            {
+                "lower_bound": index / bins,
+                "upper_bound": (index + 1) / bins,
+                "count": int(count),
+                "mean_probability": mean_probability,
+                "observed_positive_rate": observed_rate,
+            }
+        )
+    return {
+        "binning": "equal_width",
+        "bin_count": bins,
+        "expected_calibration_error": float(weighted_error / len(labels)),
+        "reliability_bins": reliability,
+    }
+
+
 def evaluate_probabilities(
     labels: np.ndarray,
     probabilities: np.ndarray,
     *,
     threshold: float,
 ) -> dict[str, Any]:
-    labels = np.asarray(labels, dtype=np.int8)
+    labels = np.asarray(labels)
     probabilities = np.asarray(probabilities, dtype=np.float64)
-    if labels.shape != probabilities.shape:
-        raise ValueError("labels and probabilities must have the same shape")
+    calibration = calibration_summary(labels, probabilities)
+    if len(np.unique(labels)) != 2:
+        raise ValueError("evaluation requires both label classes")
     if not 0 < threshold < 1:
         raise ValueError("threshold must be between 0 and 1")
     clipped = np.clip(probabilities, 1e-7, 1 - 1e-7)
@@ -49,4 +98,5 @@ def evaluate_probabilities(
         "recall": float(recall_score(labels, predictions, zero_division=0)),
         "f1": float(f1_score(labels, predictions, zero_division=0)),
         "confusion_matrix": matrix.tolist(),
+        "calibration": calibration,
     }

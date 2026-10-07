@@ -174,6 +174,8 @@ qqdup train \
 
 The artifact contains the exact configuration, dataset fingerprint, split
 assignments, validation choices, and untouched held-out test metrics.
+Labeled evaluation reports also include ten-bin reliability data and expected
+calibration error for inspecting predicted probability quality.
 
 For a question-disjoint local evaluation, set
 `"split_strategy": "question_disjoint"` in a copy of the training JSON.

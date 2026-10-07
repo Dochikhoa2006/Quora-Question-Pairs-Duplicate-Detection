@@ -89,6 +89,11 @@ threshold cannot improve probability log loss.
 - **Accuracy and balanced accuracy**: thresholded correctness.
 - **Precision, recall, and F1**: positive-class threshold behavior.
 - **Confusion matrix**: counts in `[[TN, FP], [FN, TP]]` order.
+- **Calibration**: ten equal-width reliability bins with counts, mean predicted
+  probability, observed positive rate, and expected calibration error (ECE).
+  The final bin includes probability 1; empty bins have null means. ECE is
+  the count-weighted mean absolute gap between the two rates. It depends on
+  binning and should be read alongside Brier score and log loss.
 
 The [Quora Question Pairs competition](https://www.kaggle.com/competitions/quora-question-pairs/overview/evaluation)
 expects an `is_duplicate` probability for each `test_id`. Local accuracy is

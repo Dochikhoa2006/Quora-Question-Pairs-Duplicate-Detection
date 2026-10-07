@@ -36,6 +36,10 @@ def test_end_to_end_lexical_training_and_prediction(
     )
 
     assert evaluation["methodology"]["competition_test_labels_used"] is False
+    assert (
+        sum(bin_["count"] for bin_ in evaluation["test"]["calibration"]["reliability_bins"])
+        == evaluation["split_sizes"]["test"]
+    )
     assert set(predictions.columns) == {"id", "is_duplicate"}
     assert predictions["is_duplicate"].between(0, 1).all()
     assert not any(artifact_dir.glob("*.pkl"))
@@ -62,11 +66,7 @@ def test_grouped_training_records_split_protocol(tmp_path, pair_frame: pd.DataFr
     assignments = pd.read_csv(artifact_dir / "split_assignments.csv")
     pair_frame = pair_frame.assign(split=assignments["split"])
     partitions = [
-        set(part["question1"]) | set(part["question2"])
-        for _, part in pair_frame.groupby("split")
+        set(part["question1"]) | set(part["question2"]) for _, part in pair_frame.groupby("split")
     ]
     assert len(partitions) == 3
-    assert all(
-        partitions[i].isdisjoint(partitions[j])
-        for i, j in ((0, 1), (0, 2), (1, 2))
-    )
+    assert all(partitions[i].isdisjoint(partitions[j]) for i, j in ((0, 1), (0, 2), (1, 2)))

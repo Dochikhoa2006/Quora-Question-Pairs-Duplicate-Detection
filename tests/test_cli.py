@@ -51,6 +51,7 @@ def test_cli_train_predict_evaluate_and_inspect(
     )
     external_output = json.loads(capsys.readouterr().out)
     assert external_output["rows"] == len(pair_frame)
+    assert external_output["calibration"]["bin_count"] == 10
     assert evaluation_json.is_file()
 
     cli.main(["inspect", "--artifact", str(artifact_dir)])
