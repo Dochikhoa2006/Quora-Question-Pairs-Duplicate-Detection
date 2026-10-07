@@ -16,7 +16,7 @@ Priorities can change when evidence or user needs change.
 
 ## Next — stronger evaluation science
 
-- [ ] Add question-disjoint splitting using stable question IDs or components
+- [x] Add optional question-disjoint splitting using normalized question components
 - [ ] Add repeated grouped evaluation with uncertainty summaries
 - [ ] Add calibration curves and expected calibration error
 - [ ] Add privacy-safe slice/error analysis tooling

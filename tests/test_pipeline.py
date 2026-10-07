@@ -41,3 +41,32 @@ def test_end_to_end_lexical_training_and_prediction(
     assert not any(artifact_dir.glob("*.pkl"))
     manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["decision"]["comparison"] == "probability >= threshold"
+
+
+def test_grouped_training_records_split_protocol(tmp_path, pair_frame: pd.DataFrame) -> None:
+    training_csv = tmp_path / "train.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    artifact_dir = tmp_path / "artifact"
+    report = train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(
+            split_strategy="question_disjoint",
+            validation_size=0.2,
+            test_size=0.2,
+            tfidf_max_features=2_000,
+            tfidf_min_df=1,
+        ),
+    )
+    assert report["methodology"]["split_strategy"] == "question_disjoint"
+    assignments = pd.read_csv(artifact_dir / "split_assignments.csv")
+    pair_frame = pair_frame.assign(split=assignments["split"])
+    partitions = [
+        set(part["question1"]) | set(part["question2"])
+        for _, part in pair_frame.groupby("split")
+    ]
+    assert len(partitions) == 3
+    assert all(
+        partitions[i].isdisjoint(partitions[j])
+        for i, j in ((0, 1), (0, 2), (1, 2))
+    )

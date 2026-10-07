@@ -22,6 +22,15 @@ With the default configuration and seed 42, labeled rows are stratified into:
 
 The exact row assignment is written to `split_assignments.csv`.
 
+To evaluate generalization to unseen questions, set
+`"split_strategy": "question_disjoint"` in the training JSON. This groups
+rows by connected components of normalized questions: if two pairs share a
+question directly or through other pairs, they stay in one partition. The
+split is deterministic for a fixed seed. Component sizes can make the actual
+row fractions and class balance differ from the requested values; training
+fails if it cannot put both classes in every partition. The strategy is
+recorded in the configuration and evaluation report.
+
 The partitions have distinct roles:
 
 | Partition | Permitted use |
@@ -106,7 +115,8 @@ revision, and the completed model card.
 
 The default pair-level split is convenient and reproducible, but it does not
 guarantee question-disjoint partitions. If the same question occurs in multiple
-pairs, textual overlap can make the estimate optimistic.
+pairs, textual overlap can make the estimate optimistic. Use the opt-in grouped
+split for a more demanding estimate, and report its actual partition sizes.
 
 Before making scientific or production claims:
 

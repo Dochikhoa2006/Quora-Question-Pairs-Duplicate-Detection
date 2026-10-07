@@ -175,6 +175,12 @@ qqdup train \
 The artifact contains the exact configuration, dataset fingerprint, split
 assignments, validation choices, and untouched held-out test metrics.
 
+For a question-disjoint local evaluation, set
+`"split_strategy": "question_disjoint"` in a copy of the training JSON.
+Pairs connected by any normalized question stay in the same partition. This
+protocol can produce uneven partition sizes or fail when too few independent
+components contain both labels. See [evaluation methodology](docs/EVALUATION.md).
+
 ### Optional semantic fine-tuning
 
 Install the optional dependencies:

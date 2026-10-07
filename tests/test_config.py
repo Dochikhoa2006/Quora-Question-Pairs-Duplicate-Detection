@@ -29,6 +29,7 @@ def test_config_round_trip_and_unknown_keys(tmp_path) -> None:
     [
         ({"validation_size": 0}, "validation_size"),
         ({"test_size": 1}, "test_size"),
+        ({"split_strategy": "unknown"}, "split_strategy"),
         ({"validation_size": 0.6, "test_size": 0.5}, "less than 1"),
         ({"threshold_metric": "made-up"}, "threshold_metric"),
         ({"logistic_c": 0}, "logistic_c"),

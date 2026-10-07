@@ -51,6 +51,7 @@ def train_pipeline(
         validation_size=config.validation_size,
         test_size=config.test_size,
         random_seed=config.random_seed,
+        strategy=config.split_strategy,
     )
     lexical = LexicalModel.fit(
         splits.train,
@@ -103,6 +104,7 @@ def train_pipeline(
             "test_use": "single final evaluation after model selection",
             "competition_test_labels_used": False,
             "submission_metric_reported": False,
+            "split_strategy": config.split_strategy,
         },
         "split_sizes": {
             "train": len(splits.train),

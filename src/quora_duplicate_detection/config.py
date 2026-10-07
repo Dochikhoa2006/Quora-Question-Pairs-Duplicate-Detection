@@ -13,6 +13,7 @@ class TrainingConfig:
     random_seed: int = 42
     validation_size: float = 0.15
     test_size: float = 0.15
+    split_strategy: str = "pair_stratified"
     threshold_metric: str = "f1"
     logistic_c: float = 1.0
     max_iter: int = 1000
@@ -23,6 +24,8 @@ class TrainingConfig:
     semantic_batch_size: int = 64
 
     def __post_init__(self) -> None:
+        if self.split_strategy not in {"pair_stratified", "question_disjoint"}:
+            raise ValueError("split_strategy must be pair_stratified or question_disjoint")
         if not 0 < self.validation_size < 1:
             raise ValueError("validation_size must be between 0 and 1")
         if not 0 < self.test_size < 1:

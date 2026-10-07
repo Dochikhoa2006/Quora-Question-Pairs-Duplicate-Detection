@@ -88,3 +88,45 @@ def test_too_small_dataset_cannot_be_stratified() -> None:
     )
     with pytest.raises(ValueError, match="provide more examples"):
         split_labeled_pairs(tiny, validation_size=0.2, test_size=0.2, random_seed=42)
+
+
+def test_question_disjoint_split_keeps_transitive_questions_together() -> None:
+    rows = []
+    for component in range(30):
+        rows.extend(
+            [
+                (f"question {component} a", f"question {component} b", 1),
+                (f"question {component} b", f"question {component} c", 0),
+            ]
+        )
+    frame = pd.DataFrame(rows, columns=["question1", "question2", "is_duplicate"])
+    first = split_labeled_pairs(
+        frame, validation_size=0.2, test_size=0.2, random_seed=7,
+        strategy="question_disjoint",
+    )
+    second = split_labeled_pairs(
+        frame, validation_size=0.2, test_size=0.2, random_seed=7,
+        strategy="question_disjoint",
+    )
+    assert first.assignments.equals(second.assignments)
+    question_sets = [
+        set(part["question1"]) | set(part["question2"])
+        for part in (first.train, first.validation, first.test)
+    ]
+    assert all(question_sets[i].isdisjoint(question_sets[j]) for i, j in ((0, 1), (0, 2), (1, 2)))
+    assert all(
+        part["is_duplicate"].nunique() == 2
+        for part in (first.train, first.validation, first.test)
+    )
+
+
+def test_question_disjoint_split_rejects_single_component() -> None:
+    frame = pd.DataFrame(
+        [("a", "b", 1), ("b", "c", 0), ("c", "d", 1)],
+        columns=["question1", "question2", "is_duplicate"],
+    )
+    with pytest.raises(ValueError, match="at least three components"):
+        split_labeled_pairs(
+            frame, validation_size=0.2, test_size=0.2, random_seed=7,
+            strategy="question_disjoint",
+        )
