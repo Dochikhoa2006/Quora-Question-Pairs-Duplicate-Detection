@@ -17,7 +17,7 @@ Priorities can change when evidence or user needs change.
 ## Next — stronger evaluation science
 
 - [x] Add optional question-disjoint splitting using normalized question components
-- [ ] Add repeated grouped evaluation with uncertainty summaries
+- [x] Add repeated grouped evaluation with descriptive uncertainty summaries
 - [x] Add reliability-bin data and expected calibration error to labeled reports
 - [x] Add aggregate slice/error analysis with small-group suppression
 - [ ] Publish one immutable aggregate benchmark report and completed model card

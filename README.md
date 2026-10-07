@@ -250,6 +250,19 @@ status. Slices with fewer than the requested number of rows are omitted.
 
 See [evaluation methodology](docs/EVALUATION.md) before interpreting metrics.
 
+To inspect stability across several question-disjoint holdouts, run:
+
+```bash
+qqdup evaluate-repeated \
+  --data data/train.csv \
+  --output outputs/grouped_repeated.json \
+  --config config/default.json \
+  --repeats 5
+```
+
+This writes an aggregate report with per-seed test metrics and descriptive
+variation. It does not produce a deployable model artifact.
+
 ## Artifact format
 
 ```text

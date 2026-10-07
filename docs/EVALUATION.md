@@ -133,11 +133,29 @@ guarantee question-disjoint partitions. If the same question occurs in multiple
 pairs, textual overlap can make the estimate optimistic. Use the opt-in grouped
 split for a more demanding estimate, and report its actual partition sizes.
 
+```bash
+qqdup evaluate-repeated \
+  --data data/train.csv \
+  --output outputs/grouped.json \
+  --repeats 5
+```
+
+This repeats the complete training, validation selection, and held-out test
+evaluation under consecutive seeds, starting with the configuration seed.
+It forces question-disjoint splits and writes a compact JSON report with the
+dataset fingerprint, configuration, per-seed split sizes and test metrics, and
+mean, sample standard deviation, and 2.5/97.5 percentiles. Temporary model
+artifacts are removed after each run. The percentiles describe variation across
+these overlapping holdouts; they are not a confidence interval or an independent
+test set. Treat this as exploratory stability analysis and keep a separately
+protected final test protocol for claims.
+
 Before making scientific or production claims:
 
 1. Construct groups so no normalized question identifier crosses partitions.
 2. Repeat evaluation across several group-aware folds or seeds.
-3. Report mean, dispersion, and confidence intervals.
+3. Report mean and dispersion; use a justified uncertainty method when a
+   confidence interval is required.
 4. Freeze the complete protocol before inspecting the final test results.
 5. Evaluate slices such as question length, language, topic, and missing text.
 6. Re-check probability calibration at the deployment class prevalence.

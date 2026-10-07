@@ -15,6 +15,7 @@ from quora_duplicate_detection.pipeline import (
     evaluate_labeled_file,
     train_pipeline,
 )
+from quora_duplicate_detection.repeated import evaluate_repeated
 from quora_duplicate_detection.semantic import train_semantic_model
 
 
@@ -59,6 +60,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=20,
         help="omit aggregate slices with fewer rows (default: 20)",
     )
+
+    repeated = subparsers.add_parser(
+        "evaluate-repeated",
+        help="repeat question-disjoint train/validation/test evaluation",
+    )
+    repeated.add_argument("--data", required=True, type=Path, help="labeled training CSV")
+    repeated.add_argument("--output", required=True, type=Path, help="aggregate report JSON")
+    repeated.add_argument("--config", type=Path, help="training JSON; split is forced to grouped")
+    repeated.add_argument("--repeats", type=int, default=5, help="number of seeded runs (3-100)")
+    repeated.add_argument("--semantic-model", help="optional local/Hugging Face semantic model")
 
     semantic = subparsers.add_parser(
         "train-semantic",
@@ -115,6 +126,16 @@ def main(argv: Sequence[str] | None = None) -> None:
                 semantic_model=args.semantic_model,
                 semantic_batch_size=args.semantic_batch_size,
                 slice_min_rows=args.slice_min_rows,
+            )
+        )
+    elif args.command == "evaluate-repeated":
+        _print_json(
+            evaluate_repeated(
+                data_path=args.data,
+                output_path=args.output,
+                config=TrainingConfig.from_json(args.config),
+                repeats=args.repeats,
+                semantic_model=args.semantic_model,
             )
         )
     elif args.command == "train-semantic":

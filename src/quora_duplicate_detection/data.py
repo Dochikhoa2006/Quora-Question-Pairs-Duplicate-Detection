@@ -166,17 +166,20 @@ def _question_disjoint_indices(
     indices = np.arange(len(frame))
     best: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
     best_error = float("inf")
+    generator = np.random.default_rng(random_seed)
     # Sample group partitions, then choose the valid one closest to the requested
     # row fractions and class balance. A fixed seed makes the search reproducible.
-    for attempt in range(128):
+    for _ in range(128):
         outer = GroupShuffleSplit(
-            n_splits=1, test_size=test_size, random_state=random_seed + attempt
+            n_splits=1,
+            test_size=test_size,
+            random_state=int(generator.integers(0, 2**32 - 1)),
         )
         development_idx, test_idx = next(outer.split(indices, labels, groups))
         inner = GroupShuffleSplit(
             n_splits=1,
             test_size=validation_size / (1 - test_size),
-            random_state=random_seed + 128 + attempt,
+            random_state=int(generator.integers(0, 2**32 - 1)),
         )
         try:
             train_relative, validation_relative = next(
