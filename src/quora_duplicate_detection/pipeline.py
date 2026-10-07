@@ -25,6 +25,7 @@ from quora_duplicate_detection.ensemble import ScoreFusion, select_threshold
 from quora_duplicate_detection.lexical import LexicalModel
 from quora_duplicate_detection.metrics import evaluate_probabilities
 from quora_duplicate_detection.semantic import SemanticScorer
+from quora_duplicate_detection.slices import analyze_slices
 
 
 def _semantic_scores(
@@ -126,6 +127,9 @@ def train_pipeline(
             threshold=threshold,
         ),
     }
+    evaluation["test"]["slices"] = analyze_slices(
+        splits.test, test_probabilities, threshold=threshold
+    )
     training_metadata = {
         "dataset_fingerprint_sha256": dataset_fingerprint(data),
         "rows": len(data),
@@ -208,6 +212,7 @@ def evaluate_labeled_file(
     output_path: str | Path | None = None,
     semantic_model: str | None = None,
     semantic_batch_size: int = 64,
+    slice_min_rows: int = 20,
 ) -> dict[str, Any]:
     frame = load_pairs(data_path, labeled=True)
     artifact = load_artifact(artifact_dir)
@@ -223,6 +228,9 @@ def evaluate_labeled_file(
         threshold=artifact.threshold,
     )
     report["dataset_fingerprint_sha256"] = dataset_fingerprint(frame)
+    report["slices"] = analyze_slices(
+        frame, probabilities, threshold=artifact.threshold, min_rows=slice_min_rows
+    )
     report["note"] = "Metrics are valid only because this file contains observed labels."
     if output_path is not None:
         destination = Path(output_path)

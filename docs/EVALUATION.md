@@ -94,6 +94,16 @@ threshold cannot improve probability log loss.
   The final bin includes probability 1; empty bins have null means. ECE is
   the count-weighted mean absolute gap between the two rates. It depends on
   binning and should be read alongside Brier score and log loss.
+- **Test slices**: aggregate error, Brier score, mean probability, class rate,
+  and false-positive/false-negative rates for fixed shortest-question length
+  and empty-question categories. Groups below 20 rows are omitted entirely.
+  A missing class makes its conditional error rate null.
+
+`qqdup evaluate` adds the same aggregate slices to an external labeled report.
+Use `--slice-min-rows N` to raise the disclosure threshold. Reports contain no
+question text, identifiers, or row-level predictions. The minimum row rule is
+only a disclosure guard; these reports are not differentially private, and
+aggregate rates may still be sensitive for some datasets.
 
 The [Quora Question Pairs competition](https://www.kaggle.com/competitions/quora-question-pairs/overview/evaluation)
 expects an `is_duplicate` probability for each `test_id`. Local accuracy is

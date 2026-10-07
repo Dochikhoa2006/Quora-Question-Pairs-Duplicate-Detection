@@ -47,11 +47,15 @@ def test_cli_train_predict_evaluate_and_inspect(
             str(artifact_dir),
             "--output",
             str(evaluation_json),
+            "--slice-min-rows",
+            "20",
         ]
     )
     external_output = json.loads(capsys.readouterr().out)
     assert external_output["rows"] == len(pair_frame)
     assert external_output["calibration"]["bin_count"] == 10
+    assert external_output["slices"]["minimum_rows"] == 20
+    assert "no" in external_output["slices"]["dimensions"]["empty_question"]
     assert evaluation_json.is_file()
 
     cli.main(["inspect", "--artifact", str(artifact_dir)])

@@ -53,6 +53,12 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--output", type=Path, help="optional metrics JSON")
     evaluate.add_argument("--semantic-model", help="override semantic model reference")
     evaluate.add_argument("--semantic-batch-size", type=int, default=64)
+    evaluate.add_argument(
+        "--slice-min-rows",
+        type=int,
+        default=20,
+        help="omit aggregate slices with fewer rows (default: 20)",
+    )
 
     semantic = subparsers.add_parser(
         "train-semantic",
@@ -108,6 +114,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 output_path=args.output,
                 semantic_model=args.semantic_model,
                 semantic_batch_size=args.semantic_batch_size,
+                slice_min_rows=args.slice_min_rows,
             )
         )
     elif args.command == "train-semantic":

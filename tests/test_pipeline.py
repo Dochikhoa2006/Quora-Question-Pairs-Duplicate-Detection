@@ -36,6 +36,7 @@ def test_end_to_end_lexical_training_and_prediction(
     )
 
     assert evaluation["methodology"]["competition_test_labels_used"] is False
+    assert evaluation["test"]["slices"]["minimum_rows"] == 20
     assert (
         sum(bin_["count"] for bin_ in evaluation["test"]["calibration"]["reliability_bins"])
         == evaluation["split_sizes"]["test"]

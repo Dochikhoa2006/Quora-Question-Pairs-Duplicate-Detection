@@ -241,8 +241,12 @@ Evaluate only a genuinely labeled external file:
 qqdup evaluate \
   --data data/my_labeled_holdout.csv \
   --artifact artifacts/lexical-v1 \
-  --output outputs/external_evaluation.json
+  --output outputs/external_evaluation.json \
+  --slice-min-rows 20
 ```
+
+The report includes aggregate error rates by question length and empty-question
+status. Slices with fewer than the requested number of rows are omitted.
 
 See [evaluation methodology](docs/EVALUATION.md) before interpreting metrics.
 
