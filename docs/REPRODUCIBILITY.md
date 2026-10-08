@@ -121,6 +121,11 @@ qqdup audit-split \
 
 The command verifies the dataset fingerprint, complete row assignments,
 recorded partition sizes, class coverage, and normalized-question overlap.
+New artifacts also record a split replay version. The audit regenerates the
+assignments from the saved configuration and seed, then counts mismatched rows.
+Older artifacts without that version receive `unavailable_legacy` replay status;
+their other checks still run. A future change to a split algorithm must advance
+the replay version and preserve a replay path for prior versions.
 Question overlap fails a question-disjoint audit; it is reported but allowed
 for a pair-stratified artifact. The JSON contains aggregate counts only. A
 failed check exits with status 1; a different dataset or malformed assignment

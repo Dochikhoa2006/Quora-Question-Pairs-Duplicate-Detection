@@ -46,6 +46,7 @@ def test_end_to_end_lexical_training_and_prediction(
     assert not any(artifact_dir.glob("*.pkl"))
     manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["decision"]["comparison"] == "probability >= threshold"
+    assert manifest["training"]["split_replay_version"] == 1
 
 
 def test_grouped_training_records_split_protocol(tmp_path, pair_frame: pd.DataFrame) -> None:

@@ -13,6 +13,7 @@ from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 PAIR_COLUMNS = ("question1", "question2")
 LABEL_COLUMN = "is_duplicate"
+SPLIT_REPLAY_VERSION = 1
 
 
 def normalize_question(value: object) -> str:

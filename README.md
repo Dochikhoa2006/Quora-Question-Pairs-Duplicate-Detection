@@ -278,7 +278,7 @@ artifact/
 the manifest. Hashes detect corruption; they are not publisher signatures.
 `qqdup audit-split --data data/train.csv --artifact artifacts/lexical-v1`
 checks the saved assignments against the original labeled data and reports
-aggregate overlap and class-coverage evidence.
+aggregate overlap, class-coverage, and deterministic replay evidence.
 
 ## Docker
 

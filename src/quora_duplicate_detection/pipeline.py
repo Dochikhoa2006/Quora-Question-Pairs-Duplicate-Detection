@@ -17,6 +17,7 @@ from quora_duplicate_detection.artifacts import (
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import (
     LABEL_COLUMN,
+    SPLIT_REPLAY_VERSION,
     dataset_fingerprint,
     load_pairs,
     split_labeled_pairs,
@@ -135,6 +136,7 @@ def train_pipeline(
         "rows": len(data),
         "config": config.to_dict(),
         "model_kind": "hybrid" if semantic_model else "lexical",
+        "split_replay_version": SPLIT_REPLAY_VERSION,
     }
     save_artifact(
         output_dir,

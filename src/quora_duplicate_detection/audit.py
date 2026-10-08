@@ -9,11 +9,14 @@ from typing import Any
 import pandas as pd
 
 from quora_duplicate_detection.artifacts import load_artifact
+from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import (
     LABEL_COLUMN,
     PAIR_COLUMNS,
+    SPLIT_REPLAY_VERSION,
     dataset_fingerprint,
     load_pairs,
+    split_labeled_pairs,
 )
 
 SPLIT_NAMES = ("train", "validation", "test")
@@ -49,6 +52,36 @@ def _overlapping_questions(frame: pd.DataFrame, splits: pd.Series) -> int:
     return len(overlapping)
 
 
+def _replay_split(
+    frame: pd.DataFrame,
+    splits: pd.Series,
+    training: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    version = training.get("split_replay_version")
+    if version is None:
+        return {"status": "unavailable_legacy", "version": None, "mismatched_rows": None}
+    if version != SPLIT_REPLAY_VERSION:
+        return {"status": "unsupported_version", "version": version, "mismatched_rows": None}
+    try:
+        replay_config = TrainingConfig(**config)
+        replayed = split_labeled_pairs(
+            frame,
+            validation_size=replay_config.validation_size,
+            test_size=replay_config.test_size,
+            random_seed=replay_config.random_seed,
+            strategy=replay_config.split_strategy,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("artifact split replay configuration is invalid") from exc
+    mismatched = int((replayed.assignments["split"] != splits).sum())
+    return {
+        "status": "matched" if mismatched == 0 else "mismatch",
+        "version": version,
+        "mismatched_rows": mismatched,
+    }
+
+
 def audit_split(
     *,
     data_path: str | Path,
@@ -81,6 +114,7 @@ def audit_split(
     methodology = evaluation.get("methodology", {})
     if not isinstance(methodology, dict):
         raise ValueError("artifact evaluation methodology must be an object")
+    replay = _replay_split(frame, splits, training, config)
     checks = {
         "row_count_matches_manifest": training.get("rows") == len(frame),
         "split_sizes_match_evaluation": evaluation.get("split_sizes") == counts,
@@ -90,10 +124,14 @@ def audit_split(
             0 < positives[name] < counts[name] for name in SPLIT_NAMES
         ),
         "question_disjoint_when_required": strategy != "question_disjoint" or overlap == 0,
+        "assignments_match_replay": (
+            None if replay["status"] == "unavailable_legacy" else replay["status"] == "matched"
+        ),
     }
     report: dict[str, Any] = {
-        "passed": all(checks.values()),
+        "passed": all(value for value in checks.values() if value is not None),
         "checks": checks,
+        "replay": replay,
         "dataset_fingerprint_sha256": fingerprint,
         "split_strategy": strategy,
         "rows": len(frame),
