@@ -126,6 +126,10 @@ assignments from the saved configuration and seed, then counts mismatched rows.
 Older artifacts without that version receive `unavailable_legacy` replay status;
 their other checks still run. A future change to a split algorithm must advance
 the replay version and preserve a replay path for prior versions.
+The grouped splitter scores candidates from component row and positive counts,
+then expands only the selected candidate to row assignments. Regression tests
+check that this produces the same assignments as the original row-level search
+for the current replay version.
 Question overlap fails a question-disjoint audit; it is reported but allowed
 for a pair-stratified artifact. The JSON contains aggregate counts only. A
 failed check exits with status 1; a different dataset or malformed assignment

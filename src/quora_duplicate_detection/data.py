@@ -161,22 +161,27 @@ def _question_disjoint_indices(
     random_seed: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     groups = _question_components(frame)
-    if len(np.unique(groups)) < 3:
+    unique_groups, row_components = np.unique(groups, return_inverse=True)
+    if len(unique_groups) < 3:
         raise ValueError("question-disjoint splitting requires at least three components")
 
-    indices = np.arange(len(frame))
+    components = np.arange(len(unique_groups))
+    component_rows = np.bincount(row_components)
+    component_positives = np.bincount(row_components, weights=labels)
     best: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
     best_error = float("inf")
     generator = np.random.default_rng(random_seed)
-    # Sample group partitions, then choose the valid one closest to the requested
-    # row fractions and class balance. A fixed seed makes the search reproducible.
+    # Sample components, scoring with aggregate counts. Expand to row indices
+    # only after selecting the best candidate.
     for _ in range(128):
         outer = GroupShuffleSplit(
             n_splits=1,
             test_size=test_size,
             random_state=int(generator.integers(0, 2**32 - 1)),
         )
-        development_idx, test_idx = next(outer.split(indices, labels, groups))
+        development_components, test_components = next(
+            outer.split(components, groups=unique_groups)
+        )
         inner = GroupShuffleSplit(
             n_splits=1,
             test_size=validation_size / (1 - test_size),
@@ -184,18 +189,23 @@ def _question_disjoint_indices(
         )
         try:
             train_relative, validation_relative = next(
-                inner.split(development_idx, labels[development_idx], groups[development_idx])
+                inner.split(
+                    development_components,
+                    groups=unique_groups[development_components],
+                )
             )
         except ValueError:
             continue
-        train_idx = development_idx[train_relative]
-        validation_idx = development_idx[validation_relative]
-        parts = (train_idx, validation_idx, test_idx)
-        if any(len(part) == 0 or len(np.unique(labels[part])) != 2 for part in parts):
+        train_components = development_components[train_relative]
+        validation_components = development_components[validation_relative]
+        parts = (train_components, validation_components, test_components)
+        rows = np.array([component_rows[part].sum() for part in parts])
+        positives = np.array([component_positives[part].sum() for part in parts])
+        if np.any(rows == 0) or np.any(positives == 0) or np.any(positives == rows):
             continue
-        sizes = np.array([len(part) / len(frame) for part in parts])
+        sizes = rows / len(frame)
         targets = np.array([1 - validation_size - test_size, validation_size, test_size])
-        rates = np.array([labels[part].mean() for part in parts])
+        rates = positives / rows
         error = float(np.square(sizes - targets).sum() + np.square(rates - labels.mean()).sum())
         if error < best_error:
             best, best_error = parts, error
@@ -204,4 +214,4 @@ def _question_disjoint_indices(
             "unable to create question-disjoint splits with both classes in each partition; "
             "provide more independent question components"
         )
-    return best
+    return tuple(np.flatnonzero(np.isin(row_components, part)) for part in best)

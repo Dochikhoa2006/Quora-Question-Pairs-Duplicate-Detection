@@ -6,9 +6,13 @@ All notable changes are documented here. This project follows
 
 ## [Unreleased]
 
+### Changed
+
+- Question-disjoint split search now scores component summaries and expands only
+  the selected candidate, preserving split replay version 1 assignments
+
 ### Planned
 
-- Question-disjoint evaluation as an alternative to pair-stratified splitting
 - A completed model card and benchmark report from a versioned full-data run
 - Signed release artifacts and software-bill-of-materials publication
 

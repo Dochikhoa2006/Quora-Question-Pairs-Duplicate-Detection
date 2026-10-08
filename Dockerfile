@@ -14,7 +14,6 @@ COPY requirements.txt pyproject.toml README.md LICENSE ./
 COPY src ./src
 RUN python -m pip install --requirement requirements.txt \
     && python -m pip install --no-deps .
-
 USER 10001:10001
 ENTRYPOINT ["qqdup"]
 CMD ["--help"]
