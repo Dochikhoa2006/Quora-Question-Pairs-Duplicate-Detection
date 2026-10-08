@@ -110,5 +110,21 @@ Compare:
 - threshold and validation-selection score
 - held-out test probability metrics
 
+Audit an artifact against the exact original labeled CSV:
+
+```bash
+qqdup audit-split \
+  --data data/train.csv \
+  --artifact artifacts/<release> \
+  --output outputs/split_audit.json
+```
+
+The command verifies the dataset fingerprint, complete row assignments,
+recorded partition sizes, class coverage, and normalized-question overlap.
+Question overlap fails a question-disjoint audit; it is reported but allowed
+for a pair-stratified artifact. The JSON contains aggregate counts only. A
+failed check exits with status 1; a different dataset or malformed assignment
+file raises an error.
+
 Do not compare demo metrics to real-data metrics or validation metrics to final
 test metrics.

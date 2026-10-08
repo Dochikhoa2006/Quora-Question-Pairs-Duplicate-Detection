@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from quora_duplicate_detection.artifacts import load_artifact
+from quora_duplicate_detection.audit import audit_split
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import load_pairs
 from quora_duplicate_detection.pipeline import (
@@ -90,6 +91,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     inspect = subparsers.add_parser("inspect", help="verify and print an artifact manifest")
     inspect.add_argument("--artifact", required=True, type=Path)
+    audit = subparsers.add_parser("audit-split", help="audit saved splits against labeled data")
+    audit.add_argument("--data", required=True, type=Path, help="original labeled CSV")
+    audit.add_argument("--artifact", required=True, type=Path)
+    audit.add_argument("--output", type=Path, help="optional aggregate audit JSON")
     return parser
 
 
@@ -155,5 +160,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
     elif args.command == "inspect":
         _print_json(load_artifact(args.artifact).manifest)
+    elif args.command == "audit-split":
+        report = audit_split(
+            data_path=args.data,
+            artifact_dir=args.artifact,
+            output_path=args.output,
+        )
+        _print_json(report)
+        if not report["passed"]:
+            raise SystemExit(1)
     else:  # pragma: no cover - argparse enforces valid commands
         parser.error(f"unsupported command: {args.command}")

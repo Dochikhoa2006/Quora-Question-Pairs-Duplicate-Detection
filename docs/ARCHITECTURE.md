@@ -63,6 +63,7 @@ competition path terminates in probabilities and has no label-dependent metric.
 | `ensemble.py` | Calibrate/fuse component scores and select thresholds | Inspect held-out test labels during selection |
 | `metrics.py` | Compute labeled probability and decision metrics | Infer whether labels are genuine |
 | `artifacts.py` | Save/load strict JSON and NPZ schemas with integrity checks | Load pickle or arbitrary modules |
+| `audit.py` | Check saved assignments against the labeled dataset | Emit question text or row-level findings |
 | `pipeline.py` | Orchestrate lifecycle stages in the permitted order | Treat a submission template as observations |
 | `cli.py` | Expose explicit user workflows | Hide material defaults or mutate remotes |
 
