@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Repeated grouped evaluation now reports test-row coverage and pairwise test-set
+  overlap, making repeated holdout dependence visible in aggregate form
 - `audit-split` now replays saved validation and test metrics through the serialized
   lexical model and checks the selected threshold; hybrid replay accepts a supplied
   semantic model

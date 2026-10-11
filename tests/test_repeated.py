@@ -7,7 +7,27 @@ import pytest
 
 from quora_duplicate_detection import cli
 from quora_duplicate_detection.config import TrainingConfig
-from quora_duplicate_detection.repeated import evaluate_repeated
+from quora_duplicate_detection.repeated import _test_overlap_summary, evaluate_repeated
+
+
+def test_test_overlap_summary_uses_set_jaccard_and_row_exposure() -> None:
+    masks = [
+        pd.Series([True, True, False, False]).to_numpy(),
+        pd.Series([False, True, True, False]).to_numpy(),
+        pd.Series([False, False, True, False]).to_numpy(),
+    ]
+    summary = _test_overlap_summary(masks)
+    assert summary["rows_tested_at_least_once"] == 3
+    assert summary["fraction_tested_at_least_once"] == 0.75
+    assert summary["rows_never_tested"] == 1
+    assert summary["test_appearances_per_row"] == {
+        "minimum": 0,
+        "maximum": 2,
+        "mean": 1.25,
+    }
+    assert summary["pairwise_test_jaccard"]["minimum"] == 0
+    assert summary["pairwise_test_jaccard"]["maximum"] == 0.5
+    assert summary["pairwise_test_jaccard"]["mean"] == pytest.approx(5 / 18)
 
 
 def test_repeated_grouped_report_is_reproducible_and_aggregate(
@@ -36,6 +56,9 @@ def test_repeated_grouped_report_is_reproducible_and_aggregate(
     assert all(sum(run["split_sizes"].values()) == len(pair_frame) for run in first["runs"])
     assert len({run["split_assignments_sha256"] for run in first["runs"]}) == 3
     assert first["summary"]["log_loss"]["sample_std"] >= 0
+    assert first["test_overlap"]["rows_tested_at_least_once"] <= len(pair_frame)
+    assert first["test_overlap"]["rows_never_tested"] >= 0
+    assert 0 <= first["test_overlap"]["pairwise_test_jaccard"]["mean"] <= 1
     assert "question1" not in json.dumps(first)
     assert config.split_strategy == "pair_stratified"
 

@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import dataset_fingerprint, load_pairs
@@ -22,6 +23,32 @@ METRICS = (
     "f1",
     "accuracy",
 )
+
+
+def _test_overlap_summary(test_masks: list[np.ndarray]) -> dict[str, Any]:
+    exposures = np.sum(np.stack(test_masks), axis=0)
+    overlap = []
+    for left_index, left in enumerate(test_masks):
+        for right in test_masks[left_index + 1 :]:
+            intersection = np.count_nonzero(left & right)
+            union = np.count_nonzero(left | right)
+            overlap.append(intersection / union)
+    pairwise = np.asarray(overlap, dtype=np.float64)
+    return {
+        "rows_tested_at_least_once": int(np.count_nonzero(exposures)),
+        "fraction_tested_at_least_once": float(np.count_nonzero(exposures) / len(exposures)),
+        "rows_never_tested": int(np.count_nonzero(exposures == 0)),
+        "test_appearances_per_row": {
+            "minimum": int(exposures.min()),
+            "maximum": int(exposures.max()),
+            "mean": float(exposures.mean()),
+        },
+        "pairwise_test_jaccard": {
+            "minimum": float(pairwise.min()),
+            "maximum": float(pairwise.max()),
+            "mean": float(pairwise.mean()),
+        },
+    }
 
 
 def evaluate_repeated(
@@ -38,6 +65,7 @@ def evaluate_repeated(
     data = load_pairs(data_path, labeled=True)
     grouped_config = replace(config, split_strategy="question_disjoint")
     runs: list[dict[str, Any]] = []
+    test_masks: list[np.ndarray] = []
     for offset in range(repeats):
         seed = grouped_config.random_seed + offset
         run_config = replace(grouped_config, random_seed=seed)
@@ -50,6 +78,8 @@ def evaluate_repeated(
                 semantic_model=semantic_model,
             )
             manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
+            assignments = pd.read_csv(artifact_dir / "split_assignments.csv")
+            test_masks.append(assignments["split"].eq("test").to_numpy(dtype=bool))
             test = evaluation["test"]
             runs.append(
                 {
@@ -80,13 +110,15 @@ def evaluate_repeated(
         "protocol": "repeated_question_disjoint_holdout",
         "uncertainty_interpretation": (
             "Empirical variation across overlapping seeded holdouts; percentile bounds "
-            "are descriptive, not a confidence interval."
+            "are descriptive, not a confidence interval. Test-set overlap is summarized "
+            "separately because runs do not have independent test rows."
         ),
         "dataset_fingerprint_sha256": dataset_fingerprint(data),
         "rows": len(data),
         "config": grouped_config.to_dict(),
         "repeats": repeats,
         "runs": runs,
+        "test_overlap": _test_overlap_summary(test_masks),
         "summary": summary,
     }
     destination = Path(output_path)

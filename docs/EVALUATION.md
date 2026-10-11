@@ -149,6 +149,10 @@ artifacts are removed after each run. The percentiles describe variation across
 these overlapping holdouts; they are not a confidence interval or an independent
 test set. Treat this as exploratory stability analysis and keep a separately
 protected final test protocol for claims.
+The report also shows how many rows were tested at least once, how often each
+row appeared in a test partition, and the minimum, mean, and maximum pairwise
+Jaccard overlap between test sets. These aggregate counts help reveal repeated
+exposure to the same examples without publishing row identifiers.
 
 Before making scientific or production claims:
 
