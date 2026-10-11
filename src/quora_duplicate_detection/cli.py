@@ -91,10 +91,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     inspect = subparsers.add_parser("inspect", help="verify and print an artifact manifest")
     inspect.add_argument("--artifact", required=True, type=Path)
-    audit = subparsers.add_parser("audit-split", help="audit saved splits against labeled data")
+    audit = subparsers.add_parser(
+        "audit-split", help="replay saved splits and evaluation against labeled data"
+    )
     audit.add_argument("--data", required=True, type=Path, help="original labeled CSV")
     audit.add_argument("--artifact", required=True, type=Path)
     audit.add_argument("--output", type=Path, help="optional aggregate audit JSON")
+    audit.add_argument("--semantic-model", help="semantic model for hybrid evaluation replay")
     return parser
 
 
@@ -165,6 +168,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             data_path=args.data,
             artifact_dir=args.artifact,
             output_path=args.output,
+            semantic_model=args.semantic_model,
         )
         _print_json(report)
         if not report["passed"]:

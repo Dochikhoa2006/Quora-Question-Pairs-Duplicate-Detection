@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import math
+from numbers import Real
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
-from quora_duplicate_detection.artifacts import load_artifact
+from quora_duplicate_detection.artifacts import LoadedArtifact, load_artifact
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import (
     LABEL_COLUMN,
@@ -18,6 +21,10 @@ from quora_duplicate_detection.data import (
     load_pairs,
     split_labeled_pairs,
 )
+from quora_duplicate_detection.ensemble import select_threshold
+from quora_duplicate_detection.metrics import evaluate_probabilities
+from quora_duplicate_detection.pipeline import predict_probabilities
+from quora_duplicate_detection.slices import analyze_slices
 
 SPLIT_NAMES = ("train", "validation", "test")
 
@@ -82,13 +89,94 @@ def _replay_split(
     }
 
 
+def _values_match(saved: object, replayed: object) -> bool:
+    if isinstance(replayed, dict):
+        return isinstance(saved, dict) and all(
+            key in saved and _values_match(saved[key], value) for key, value in replayed.items()
+        )
+    if isinstance(replayed, list):
+        return (
+            isinstance(saved, list)
+            and len(saved) == len(replayed)
+            and all(_values_match(left, right) for left, right in zip(saved, replayed, strict=True))
+        )
+    if isinstance(replayed, int) and not isinstance(replayed, bool):
+        return isinstance(saved, int) and not isinstance(saved, bool) and saved == replayed
+    if isinstance(replayed, Real) and not isinstance(replayed, bool):
+        return (
+            isinstance(saved, Real)
+            and not isinstance(saved, bool)
+            and math.isclose(saved, replayed, rel_tol=1e-8, abs_tol=1e-10)
+        )
+    return saved == replayed
+
+
+def _replay_evaluation(
+    frame: pd.DataFrame,
+    splits: pd.Series,
+    artifact: LoadedArtifact,
+    evaluation: dict[str, Any],
+    semantic_model: str | None,
+) -> dict[str, Any]:
+    if "semantic_cosine" in artifact.fusion.component_names and semantic_model is None:
+        return {"status": "unavailable_semantic", "threshold_matches": None}
+    try:
+        config = artifact.manifest["training"]["config"]
+        batch_size = TrainingConfig(**config).semantic_batch_size
+        validation = frame.loc[splits == "validation"].reset_index(drop=True)
+        test = frame.loc[splits == "test"].reset_index(drop=True)
+        validation_probabilities = predict_probabilities(
+            validation,
+            artifact=artifact,
+            semantic_model=semantic_model,
+            semantic_batch_size=batch_size,
+        )
+        test_probabilities = predict_probabilities(
+            test,
+            artifact=artifact,
+            semantic_model=semantic_model,
+            semantic_batch_size=batch_size,
+        )
+        validation_labels = validation[LABEL_COLUMN].to_numpy(dtype=np.int8)
+        test_labels = test[LABEL_COLUMN].to_numpy(dtype=np.int8)
+        threshold, score = select_threshold(
+            validation_labels,
+            validation_probabilities,
+            metric=artifact.threshold_metric,
+        )
+        threshold_matches = _values_match(artifact.threshold, threshold)
+        validation_report = evaluate_probabilities(
+            validation_labels, validation_probabilities, threshold=artifact.threshold
+        )
+        validation_report["selected_threshold_metric"] = artifact.threshold_metric
+        validation_report["selected_threshold_metric_value"] = score
+        test_report = evaluate_probabilities(
+            test_labels, test_probabilities, threshold=artifact.threshold
+        )
+        test_report["slices"] = analyze_slices(
+            test, test_probabilities, threshold=artifact.threshold
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        return {"status": "mismatch", "threshold_matches": False, "reason": type(exc).__name__}
+    matched = (
+        threshold_matches
+        and _values_match(evaluation.get("validation"), validation_report)
+        and _values_match(evaluation.get("test"), test_report)
+    )
+    return {
+        "status": "matched" if matched else "mismatch",
+        "threshold_matches": threshold_matches,
+    }
+
+
 def audit_split(
     *,
     data_path: str | Path,
     artifact_dir: str | Path,
     output_path: str | Path | None = None,
+    semantic_model: str | None = None,
 ) -> dict[str, Any]:
-    """Check saved assignments and report only aggregate evidence."""
+    """Replay saved assignments and evaluation without exposing row data."""
     artifact = load_artifact(artifact_dir)
     frame = load_pairs(data_path, labeled=True)
     fingerprint = dataset_fingerprint(frame)
@@ -115,6 +203,7 @@ def audit_split(
     if not isinstance(methodology, dict):
         raise ValueError("artifact evaluation methodology must be an object")
     replay = _replay_split(frame, splits, training, config)
+    evaluation_replay = _replay_evaluation(frame, splits, artifact, evaluation, semantic_model)
     checks = {
         "row_count_matches_manifest": training.get("rows") == len(frame),
         "split_sizes_match_evaluation": evaluation.get("split_sizes") == counts,
@@ -127,11 +216,17 @@ def audit_split(
         "assignments_match_replay": (
             None if replay["status"] == "unavailable_legacy" else replay["status"] == "matched"
         ),
+        "evaluation_matches_replay": (
+            None
+            if evaluation_replay["status"] == "unavailable_semantic"
+            else evaluation_replay["status"] == "matched"
+        ),
     }
     report: dict[str, Any] = {
         "passed": all(value for value in checks.values() if value is not None),
         "checks": checks,
         "replay": replay,
+        "evaluation_replay": evaluation_replay,
         "dataset_fingerprint_sha256": fingerprint,
         "split_strategy": strategy,
         "rows": len(frame),

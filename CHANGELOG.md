@@ -8,6 +8,9 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- `audit-split` now replays saved validation and test metrics through the serialized
+  lexical model and checks the selected threshold; hybrid replay accepts a supplied
+  semantic model
 - Updated the optional semantic stack to patched releases and pinned `fsspec`
   so dependency audits cover its transitive security fix
 - Question-disjoint split search now scores component summaries and expands only

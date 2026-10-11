@@ -61,11 +61,46 @@ def test_audit_split_reports_aggregate_grouped_evidence(grouped_artifact, tmp_pa
     assert report["passed"] is True
     assert report["replay"]["status"] == "matched"
     assert report["replay"]["mismatched_rows"] == 0
+    assert report["evaluation_replay"] == {
+        "status": "matched",
+        "threshold_matches": True,
+    }
     assert report["questions_crossing_splits"] == 0
     assert all(report["checks"].values())
     assert sum(report["split_sizes"].values()) == report["rows"]
     assert "private" not in json.dumps(report)
     assert json.loads((tmp_path / "audit.json").read_text(encoding="utf-8")) == report
+
+
+def test_audit_detects_rehashed_incorrect_evaluation(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    evaluation_path = artifact_dir / "evaluation.json"
+    evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
+    evaluation["test"]["brier_score"] = 0.0
+    evaluation_path.write_text(json.dumps(evaluation), encoding="utf-8")
+    manifest_path = artifact_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["evaluation.json"] = hashlib.sha256(evaluation_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    report = audit_split(data_path=data_path, artifact_dir=artifact_dir)
+    assert report["replay"]["status"] == "matched"
+    assert report["evaluation_replay"]["status"] == "mismatch"
+    assert report["checks"]["evaluation_matches_replay"] is False
+    assert report["passed"] is False
+
+
+def test_audit_detects_changed_decision_threshold(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    manifest_path = artifact_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    original = manifest["decision"]["threshold"]
+    manifest["decision"]["threshold"] = 0.99 if original < 0.5 else 0.01
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    report = audit_split(data_path=data_path, artifact_dir=artifact_dir)
+    assert report["evaluation_replay"]["threshold_matches"] is False
+    assert report["passed"] is False
 
 
 def test_audit_detects_rehashed_leaky_assignments(grouped_artifact) -> None:

@@ -277,8 +277,10 @@ artifact/
 `qqdup inspect --artifact artifacts/lexical-v1` verifies hashes before printing
 the manifest. Hashes detect corruption; they are not publisher signatures.
 `qqdup audit-split --data data/train.csv --artifact artifacts/lexical-v1`
-checks the saved assignments against the original labeled data and reports
-aggregate overlap, class-coverage, and deterministic replay evidence.
+checks the saved assignments and replays the saved model's validation and test
+metrics against the original labeled data. Hybrid artifacts require
+`--semantic-model` to replay their metrics; without it, the audit reports
+`unavailable_semantic` for that check.
 
 ## Docker
 

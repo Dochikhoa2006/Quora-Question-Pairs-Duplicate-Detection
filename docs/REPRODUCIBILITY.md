@@ -121,6 +121,11 @@ qqdup audit-split \
 
 The command verifies the dataset fingerprint, complete row assignments,
 recorded partition sizes, class coverage, and normalized-question overlap.
+It also recomputes validation and test metrics with the saved model, verifies
+the selected threshold, and detects a report that disagrees with the original
+data even when its file hash has been updated. For a hybrid artifact, pass
+`--semantic-model` with the exact model used during training; otherwise the
+evaluation replay check is marked `unavailable_semantic`.
 New artifacts also record a split replay version. The audit regenerates the
 assignments from the saved configuration and seed, then counts mismatched rows.
 Older artifacts without that version receive `unavailable_legacy` replay status;
