@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Semantic fine-tuning can resume from a complete checkpoint after verifying
+  the dataset, base model, and settings; summaries include trainer telemetry
 - Repeated grouped evaluation can compare hybrid and lexical models on identical
   seeded splits and report paired held-out metric differences
 - Semantic fine-tuning now pins Hub base models to immutable revisions and

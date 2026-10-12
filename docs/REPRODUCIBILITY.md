@@ -68,6 +68,10 @@ loading it and records the revision in `training_summary.json`. For a local
 base model directory it records a SHA-256 over file paths and contents. The
 record identifies the base model input; it does not make GPU training bitwise
 deterministic.
+Semantic training also stores a dataset fingerprint and all resume-critical
+settings in `run_config.json` before fitting. `--resume` checks these values and
+the base model provenance, then resumes from the newest complete checkpoint.
+The final summary includes aggregate training metrics and step history.
 
 ## Configuration provenance
 

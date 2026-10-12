@@ -106,9 +106,11 @@ def test_cli_semantic_command_delegates_without_running_a_model(
             "--lora",
             "--base-revision",
             "c" * 40,
+            "--resume",
         ]
     )
     output = json.loads(capsys.readouterr().out)
     assert output["objective"] == "CoSENTLoss"
     assert called["use_lora"] is True
     assert called["base_revision"] == "c" * 40
+    assert called["resume"] is True

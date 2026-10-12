@@ -94,6 +94,9 @@ def build_parser() -> argparse.ArgumentParser:
     semantic.add_argument("--batch-size", type=int, default=32)
     semantic.add_argument("--learning-rate", type=float, default=2e-5)
     semantic.add_argument("--lora", action="store_true", help="train a PEFT LoRA adapter")
+    semantic.add_argument(
+        "--resume", action="store_true", help="resume a matching checkpointed run"
+    )
 
     inspect = subparsers.add_parser("inspect", help="verify and print an artifact manifest")
     inspect.add_argument("--artifact", required=True, type=Path)
@@ -171,6 +174,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 batch_size=args.batch_size,
                 learning_rate=args.learning_rate,
                 use_lora=args.lora,
+                resume=args.resume,
             )
         )
     elif args.command == "inspect":

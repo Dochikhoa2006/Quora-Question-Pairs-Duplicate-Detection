@@ -206,6 +206,10 @@ The command resolves Hub model names to a commit SHA before loading and records
 that revision in `training_summary.json`. Pass `--base-revision` to choose a
 branch, tag, or commit; a 40-character commit SHA also works from a populated
 offline cache. Local model directories are recorded with a content SHA-256.
+Training writes `run_config.json` before fitting and records aggregate trainer
+metrics in `training_summary.json`. If a run stops after a checkpoint was saved,
+repeat the command with `--resume` and the same data, model, and settings. Resume
+rejects changed inputs or settings and requires a complete checkpoint.
 
 Then train calibrated hybrid fusion:
 
