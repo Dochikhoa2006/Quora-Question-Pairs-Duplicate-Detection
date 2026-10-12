@@ -3,9 +3,15 @@ from __future__ import annotations
 import json
 
 import pandas as pd
+import pytest
 
 from quora_duplicate_detection.config import TrainingConfig
-from quora_duplicate_detection.pipeline import create_predictions, train_pipeline
+from quora_duplicate_detection.lexical import LexicalModel
+from quora_duplicate_detection.pipeline import (
+    create_predictions,
+    create_predictions_chunked,
+    train_pipeline,
+)
 
 
 def test_end_to_end_lexical_training_and_prediction(
@@ -72,3 +78,118 @@ def test_grouped_training_records_split_protocol(tmp_path, pair_frame: pd.DataFr
     ]
     assert len(partitions) == 3
     assert all(partitions[i].isdisjoint(partitions[j]) for i, j in ((0, 1), (0, 2), (1, 2)))
+
+
+@pytest.mark.parametrize("keep_id", [True, False])
+def test_chunked_predictions_match_regular_output(
+    tmp_path, pair_frame: pd.DataFrame, keep_id: bool
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    input_csv = tmp_path / "input.csv"
+    artifact_dir = tmp_path / "artifact"
+    regular_csv = tmp_path / "regular.csv"
+    chunked_csv = tmp_path / "chunked.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    columns = ["question1", "question2"]
+    if keep_id:
+        columns.insert(0, "id")
+    pair_frame[columns].iloc[:11].to_csv(input_csv, index=False)
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+
+    create_predictions(
+        input_path=input_csv,
+        artifact_dir=artifact_dir,
+        output_path=regular_csv,
+        include_binary_prediction=True,
+    )
+    rows = create_predictions_chunked(
+        input_path=input_csv,
+        artifact_dir=artifact_dir,
+        output_path=chunked_csv,
+        chunk_size=3,
+        include_binary_prediction=True,
+    )
+    assert rows == 11
+    pd.testing.assert_frame_equal(pd.read_csv(regular_csv), pd.read_csv(chunked_csv))
+    assert next(iter(pd.read_csv(chunked_csv).columns)) == ("id" if keep_id else "test_id")
+
+
+def test_chunked_predictions_preserve_existing_output_on_later_failure(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    input_csv = tmp_path / "input.csv"
+    artifact_dir = tmp_path / "artifact"
+    output_csv = tmp_path / "output.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    pair_frame.iloc[:7].to_csv(input_csv, index=False)
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+    output_csv.write_text("previous result\n", encoding="utf-8")
+    original_predict = LexicalModel.predict_proba
+    calls = 0
+
+    def fail_second_chunk(self, frame):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("later chunk failed")
+        return original_predict(self, frame)
+
+    monkeypatch.setattr(LexicalModel, "predict_proba", fail_second_chunk)
+    with pytest.raises(RuntimeError, match="later chunk failed"):
+        create_predictions_chunked(
+            input_path=input_csv,
+            artifact_dir=artifact_dir,
+            output_path=output_csv,
+            chunk_size=3,
+        )
+    assert output_csv.read_text(encoding="utf-8") == "previous result\n"
+    assert not list(tmp_path.glob(".qqdup-*.csv"))
+
+
+def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
+    with pytest.raises(ValueError, match="chunk_size"):
+        create_predictions_chunked(
+            input_path=tmp_path / "missing.csv",
+            artifact_dir=tmp_path / "missing",
+            output_path=tmp_path / "unused.csv",
+            chunk_size=0,
+        )
+
+
+def test_chunked_predictions_preserve_mixed_identifier_text(
+    tmp_path, pair_frame: pd.DataFrame
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    input_csv = tmp_path / "input.csv"
+    artifact_dir = tmp_path / "artifact"
+    output_csv = tmp_path / "output.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    input_frame = pair_frame[["question1", "question2"]].iloc[:3].copy()
+    input_frame.insert(0, "test_id", ["001", "002", "A03"])
+    input_frame.to_csv(input_csv, index=False)
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+
+    create_predictions_chunked(
+        input_path=input_csv,
+        artifact_dir=artifact_dir,
+        output_path=output_csv,
+        chunk_size=1,
+    )
+    assert pd.read_csv(output_csv, dtype={"test_id": "string"})["test_id"].tolist() == [
+        "001",
+        "002",
+        "A03",
+    ]

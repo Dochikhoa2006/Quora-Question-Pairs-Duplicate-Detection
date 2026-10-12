@@ -38,6 +38,24 @@ def test_cli_train_predict_evaluate_and_inspect(
     assert predict_output["rows"] == len(pair_frame)
     assert "prediction" in pd.read_csv(prediction_csv)
 
+    chunked_csv = tmp_path / "chunked.csv"
+    cli.main(
+        [
+            "predict",
+            "--input",
+            str(training_csv),
+            "--artifact",
+            str(artifact_dir),
+            "--output",
+            str(chunked_csv),
+            "--include-binary-prediction",
+            "--chunk-size",
+            "7",
+        ]
+    )
+    assert json.loads(capsys.readouterr().out)["rows"] == len(pair_frame)
+    pd.testing.assert_frame_equal(pd.read_csv(prediction_csv), pd.read_csv(chunked_csv))
+
     cli.main(
         [
             "evaluate",

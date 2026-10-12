@@ -13,6 +13,7 @@ from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import load_pairs
 from quora_duplicate_detection.pipeline import (
     create_predictions,
+    create_predictions_chunked,
     evaluate_labeled_file,
     train_pipeline,
 )
@@ -43,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--output", required=True, type=Path, help="output CSV")
     predict.add_argument("--semantic-model", help="override semantic model reference")
     predict.add_argument("--semantic-batch-size", type=int, default=64)
+    predict.add_argument("--chunk-size", type=int, help="stream input in chunks of this many rows")
     predict.add_argument(
         "--include-binary-prediction",
         action="store_true",
@@ -116,15 +118,19 @@ def main(argv: Sequence[str] | None = None) -> None:
             )
         )
     elif args.command == "predict":
-        output = create_predictions(
-            input_path=args.input,
-            artifact_dir=args.artifact,
-            output_path=args.output,
-            semantic_model=args.semantic_model,
-            semantic_batch_size=args.semantic_batch_size,
-            include_binary_prediction=args.include_binary_prediction,
-        )
-        _print_json({"output": str(args.output), "rows": len(output)})
+        options = {
+            "input_path": args.input,
+            "artifact_dir": args.artifact,
+            "output_path": args.output,
+            "semantic_model": args.semantic_model,
+            "semantic_batch_size": args.semantic_batch_size,
+            "include_binary_prediction": args.include_binary_prediction,
+        }
+        if args.chunk_size is None:
+            rows = len(create_predictions(**options))
+        else:
+            rows = create_predictions_chunked(**options, chunk_size=args.chunk_size)
+        _print_json({"output": str(args.output), "rows": rows})
     elif args.command == "evaluate":
         _print_json(
             evaluate_labeled_file(

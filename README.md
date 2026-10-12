@@ -234,6 +234,9 @@ qqdup predict \
 The command preserves `test_id` (or `id`) and writes `is_duplicate` as a
 probability. It does not read `sample_submission.csv` and does not report
 accuracy.
+For a large input file, add `--chunk-size 10000` to bound inference memory.
+Chunked prediction loads the artifact and optional semantic model once, then
+replaces the output file only after every chunk succeeds.
 
 Evaluate only a genuinely labeled external file:
 

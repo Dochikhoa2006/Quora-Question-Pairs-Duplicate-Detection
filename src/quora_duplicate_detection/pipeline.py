@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 import numpy as np
@@ -21,6 +23,7 @@ from quora_duplicate_detection.data import (
     dataset_fingerprint,
     load_pairs,
     split_labeled_pairs,
+    validate_pairs,
 )
 from quora_duplicate_detection.ensemble import ScoreFusion, select_threshold
 from quora_duplicate_detection.lexical import LexicalModel
@@ -192,19 +195,111 @@ def create_predictions(
         semantic_model=semantic_model,
         semantic_batch_size=semantic_batch_size,
     )
-    identifier = next((name for name in ("test_id", "id") if name in frame), None)
-    if identifier:
-        output = frame[[identifier]].copy()
-    else:
-        output = pd.DataFrame({"test_id": np.arange(len(frame), dtype=np.int64)})
-    output["is_duplicate"] = probabilities
-    if include_binary_prediction:
-        output["prediction"] = (probabilities >= artifact.threshold).astype(np.int8)
+    output = _prediction_frame(
+        frame,
+        probabilities,
+        artifact=artifact,
+        row_offset=0,
+        include_binary_prediction=include_binary_prediction,
+    )
 
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     output.to_csv(destination, index=False)
     return output
+
+
+def _prediction_frame(
+    frame: pd.DataFrame,
+    probabilities: np.ndarray,
+    *,
+    artifact: LoadedArtifact,
+    row_offset: int,
+    include_binary_prediction: bool,
+) -> pd.DataFrame:
+    identifier = next((name for name in ("test_id", "id") if name in frame), None)
+    if identifier:
+        output = frame[[identifier]].copy()
+    else:
+        output = pd.DataFrame(
+            {"test_id": np.arange(row_offset, row_offset + len(frame), dtype=np.int64)}
+        )
+    output["is_duplicate"] = probabilities
+    if include_binary_prediction:
+        output["prediction"] = (probabilities >= artifact.threshold).astype(np.int8)
+
+    return output
+
+
+def create_predictions_chunked(
+    *,
+    input_path: str | Path,
+    artifact_dir: str | Path,
+    output_path: str | Path,
+    chunk_size: int,
+    semantic_model: str | None = None,
+    semantic_batch_size: int = 64,
+    include_binary_prediction: bool = False,
+) -> int:
+    """Stream an unlabeled CSV to an atomic output while loading models once."""
+    if isinstance(chunk_size, bool) or not isinstance(chunk_size, int) or chunk_size < 1:
+        raise ValueError("chunk_size must be a positive integer")
+    artifact = load_artifact(artifact_dir)
+    requires_semantic = "semantic_cosine" in artifact.fusion.component_names
+    reference = semantic_model or artifact.semantic_model_reference
+    if requires_semantic and reference is None:
+        raise ValueError("hybrid artifact requires --semantic-model")
+    scorer = (
+        SemanticScorer(reference, batch_size=semantic_batch_size) if requires_semantic else None
+    )
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    rows = 0
+    try:
+        with NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            suffix=".csv",
+            prefix=".qqdup-",
+            dir=destination.parent,
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            for raw_chunk in pd.read_csv(
+                input_path,
+                chunksize=chunk_size,
+                dtype={
+                    "question1": "string",
+                    "question2": "string",
+                    "test_id": "string",
+                    "id": "string",
+                },
+            ):
+                chunk = validate_pairs(raw_chunk, labeled=False)
+                lexical_scores = artifact.lexical.predict_proba(chunk)
+                semantic_scores = scorer.score(chunk) if scorer is not None else None
+                probabilities = artifact.fusion.predict_proba(
+                    lexical_scores=lexical_scores,
+                    semantic_scores=semantic_scores,
+                )
+                output = _prediction_frame(
+                    chunk,
+                    probabilities,
+                    artifact=artifact,
+                    row_offset=rows,
+                    include_binary_prediction=include_binary_prediction,
+                )
+                output.to_csv(temporary, index=False, header=rows == 0)
+                rows += len(chunk)
+        if rows == 0:
+            raise ValueError(f"{input_path} contains no rows")
+        os.replace(temporary_path, destination)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+    return rows
 
 
 def evaluate_labeled_file(

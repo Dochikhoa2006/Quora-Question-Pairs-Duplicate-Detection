@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- `qqdup predict --chunk-size` streams large CSV inputs, reuses loaded models,
+  and replaces the output only after all chunks complete
 - Repeated grouped evaluation now reports test-row coverage and pairwise test-set
   overlap, making repeated holdout dependence visible in aggregate form
 - `audit-split` now replays saved validation and test metrics through the serialized
