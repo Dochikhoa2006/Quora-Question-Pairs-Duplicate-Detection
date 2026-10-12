@@ -69,6 +69,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
+markers = ["semantic_integration: opt-in offline semantic training smoke test"]
 
 [tool.coverage.run]
 branch = true

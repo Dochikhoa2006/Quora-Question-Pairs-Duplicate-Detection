@@ -31,7 +31,7 @@ evidence.
 - [x] Record immutable upstream model revisions automatically
 - [x] Add resumable semantic training and structured trainer telemetry
 - [ ] Compare lexical, frozen semantic, CoSENT, and CoSENT+LoRA under one protocol
-- [ ] Add a hardware-aware semantic integration test outside normal core CI
+- [x] Add a hardware-aware semantic integration test outside normal core CI
 - [ ] Publish adapter checksums and signed provenance
 
 Acceptance criteria: comparisons use identical splits and calibration rules;

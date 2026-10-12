@@ -1,4 +1,4 @@
-.PHONY: install install-semantic install-dev demo train-demo test lint security package docker check
+.PHONY: install install-semantic install-dev demo train-demo test test-semantic lint security package docker check
 
 install:
 	python -m pip install --requirement requirements.txt
@@ -20,6 +20,9 @@ train-demo: demo
 
 test:
 	pytest --cov=quora_duplicate_detection --cov-report=term-missing
+
+test-semantic:
+	QQDUP_RUN_SEMANTIC_INTEGRATION=1 pytest -q -s tests/integration/test_semantic_training.py
 
 lint:
 	ruff check .

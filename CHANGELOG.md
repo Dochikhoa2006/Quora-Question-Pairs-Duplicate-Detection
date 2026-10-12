@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Added an opt-in offline semantic integration smoke test covering full and LoRA
+  fine-tuning, checkpoint resume, scoring, and hardware/runtime reporting
 - Semantic fine-tuning can resume from a complete checkpoint after verifying
   the dataset, base model, and settings; summaries include trainer telemetry
 - Repeated grouped evaluation can compare hybrid and lexical models on identical
