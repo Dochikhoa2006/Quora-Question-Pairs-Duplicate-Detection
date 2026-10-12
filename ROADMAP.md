@@ -28,7 +28,7 @@ evidence.
 
 ## Later — semantic experiment maturity
 
-- [ ] Record immutable upstream model revisions automatically
+- [x] Record immutable upstream model revisions automatically
 - [ ] Add resumable semantic training and structured trainer telemetry
 - [ ] Compare lexical, frozen semantic, CoSENT, and CoSENT+LoRA under one protocol
 - [ ] Add a hardware-aware semantic integration test outside normal core CI

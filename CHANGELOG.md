@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Semantic fine-tuning now pins Hub base models to immutable revisions and
+  records either the Hub commit or a local directory content digest
 - `qqdup predict --chunk-size` streams large CSV inputs, reuses loaded models,
   and replaces the output only after all chunks complete
 - Repeated grouped evaluation now reports test-row coverage and pairwise test-set

@@ -84,6 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--base-model",
         default="sentence-transformers/all-mpnet-base-v2",
     )
+    semantic.add_argument("--base-revision", help="Hub branch, tag, or 40-character commit SHA")
     semantic.add_argument("--validation-size", type=float, default=0.15)
     semantic.add_argument("--seed", type=int, default=42)
     semantic.add_argument("--epochs", type=float, default=1.0)
@@ -159,6 +160,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 frame,
                 output_dir=args.output,
                 base_model=args.base_model,
+                base_revision=args.base_revision,
                 validation_size=args.validation_size,
                 random_seed=args.seed,
                 epochs=args.epochs,

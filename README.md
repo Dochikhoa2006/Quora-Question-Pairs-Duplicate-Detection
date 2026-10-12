@@ -202,6 +202,11 @@ qqdup train-semantic \
   --lora
 ```
 
+The command resolves Hub model names to a commit SHA before loading and records
+that revision in `training_summary.json`. Pass `--base-revision` to choose a
+branch, tag, or commit; a 40-character commit SHA also works from a populated
+offline cache. Local model directories are recorded with a content SHA-256.
+
 Then train calibrated hybrid fusion:
 
 ```bash

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,52 @@ import numpy as np
 import pandas as pd
 
 from quora_duplicate_detection.data import LABEL_COLUMN, PAIR_COLUMNS, validate_pairs
+
+
+def _local_model_digest(root: Path) -> str:
+    files = sorted((path for path in root.rglob("*") if path.is_file()), key=lambda p: p.as_posix())
+    if not files:
+        raise ValueError("local base model directory contains no files")
+    digest = hashlib.sha256()
+    for path in files:
+        relative = path.relative_to(root).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _resolve_base_model(
+    base_model: str, base_revision: str | None
+) -> tuple[dict[str, str | None], dict[str, str]]:
+    local_path = Path(base_model)
+    if local_path.is_dir():
+        if base_revision is not None:
+            raise ValueError("base_revision cannot be used with a local model directory")
+        return (
+            {
+                "source": "local_directory",
+                "revision": None,
+                "sha256": _local_model_digest(local_path),
+            },
+            {},
+        )
+
+    if base_revision is not None and re.fullmatch(r"[0-9a-f]{40}", base_revision):
+        revision = base_revision
+    else:
+        from huggingface_hub import HfApi
+
+        info = HfApi().model_info(base_model, revision=base_revision, timeout=30)
+        revision = info.sha
+        if not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+            raise ValueError("Hugging Face did not return an immutable model revision")
+    return (
+        {"source": "huggingface_hub", "revision": revision, "sha256": None},
+        {"revision": revision},
+    )
 
 
 class SemanticScorer:
@@ -51,6 +99,7 @@ def train_semantic_model(
     batch_size: int,
     learning_rate: float,
     use_lora: bool,
+    base_revision: str | None = None,
 ) -> dict[str, Any]:
     """Fine-tune one documented CoSENT objective with a held-out evaluator."""
     try:
@@ -75,6 +124,7 @@ def train_semantic_model(
     output = Path(output_dir)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f"semantic output directory is not empty: {output}")
+    provenance, model_kwargs = _resolve_base_model(base_model, base_revision)
     output.mkdir(parents=True, exist_ok=True)
 
     train_idx, validation_idx = train_test_split(
@@ -88,7 +138,7 @@ def train_semantic_model(
 
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
-    model = SentenceTransformer(base_model)
+    model = SentenceTransformer(base_model, **model_kwargs)
     if use_lora:
         from peft import LoraConfig, TaskType
 
@@ -160,6 +210,7 @@ def train_semantic_model(
     summary: dict[str, Any] = {
         "objective": "CoSENTLoss",
         "base_model": base_model,
+        "base_model_provenance": provenance,
         "use_lora": use_lora,
         "random_seed": random_seed,
         "train_rows": len(train_frame),

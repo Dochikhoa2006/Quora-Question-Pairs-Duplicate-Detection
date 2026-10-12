@@ -63,6 +63,12 @@ can still produce numeric differences. A formal semantic release should record:
 - training duration and batch/accumulation settings
 - all warnings and evaluator output
 
+`qqdup train-semantic` resolves a Hub base model to its immutable commit before
+loading it and records the revision in `training_summary.json`. For a local
+base model directory it records a SHA-256 over file paths and contents. The
+record identifies the base model input; it does not make GPU training bitwise
+deterministic.
+
 ## Configuration provenance
 
 Start from `config/default.json` and commit any experiment configuration under a
