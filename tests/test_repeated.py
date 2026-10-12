@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from quora_duplicate_detection import cli
+from quora_duplicate_detection import cli, pipeline, repeated
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.repeated import _test_overlap_summary, evaluate_repeated
 
@@ -112,5 +113,80 @@ def test_repeated_split_failure_does_not_write_partial_report(tmp_path) -> None:
             output_path=output_path,
             config=TrainingConfig(),
             repeats=3,
+        )
+    assert not output_path.exists()
+
+
+def test_paired_hybrid_comparison_uses_same_seeded_splits(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    input_path = tmp_path / "pairs.csv"
+    output_path = tmp_path / "paired.json"
+    pair_frame.to_csv(input_path, index=False)
+
+    def fake_semantic_scores(frame, *, semantic_model, batch_size):
+        if semantic_model is None:
+            return None
+        return np.asarray(frame["question1"].str.len(), dtype=np.float64) / 100
+
+    monkeypatch.setattr(pipeline, "_semantic_scores", fake_semantic_scores)
+    report = evaluate_repeated(
+        data_path=input_path,
+        output_path=output_path,
+        config=TrainingConfig(tfidf_min_df=1, tfidf_max_features=2_000),
+        repeats=3,
+        semantic_model="stub-model",
+        compare_lexical=True,
+    )
+
+    assert report["paired_comparison"]["same_split_per_seed"] is True
+    assert report["paired_comparison"]["difference"] == "hybrid_minus_lexical"
+    assert len(report["runs"]) == 3
+    for run in report["runs"]:
+        assert run["hybrid_minus_lexical"]["log_loss"] == pytest.approx(
+            run["test_metrics"]["log_loss"] - run["lexical_test_metrics"]["log_loss"]
+        )
+    assert json.loads(output_path.read_text(encoding="utf-8")) == report
+    assert "question1" not in json.dumps(report)
+
+
+def test_paired_comparison_requires_semantic_model_before_loading_data(tmp_path) -> None:
+    output_path = tmp_path / "unused.json"
+    with pytest.raises(ValueError, match="requires a semantic_model"):
+        evaluate_repeated(
+            data_path=tmp_path / "missing.csv",
+            output_path=output_path,
+            config=TrainingConfig(),
+            compare_lexical=True,
+        )
+    assert not output_path.exists()
+
+
+def test_paired_comparison_rejects_mismatched_split_evidence(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    input_path = tmp_path / "pairs.csv"
+    output_path = tmp_path / "paired.json"
+    pair_frame.to_csv(input_path, index=False)
+    original_train = repeated.train_pipeline
+
+    def altered_lexical_manifest(*, output_dir, semantic_model=None, **kwargs):
+        report = original_train(output_dir=output_dir, semantic_model=None, **kwargs)
+        if semantic_model is None:
+            manifest_path = output_dir / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["files"]["split_assignments.csv"] = "0" * 64
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        return report
+
+    monkeypatch.setattr(repeated, "train_pipeline", altered_lexical_manifest)
+    with pytest.raises(RuntimeError, match="identical split assignments"):
+        evaluate_repeated(
+            data_path=input_path,
+            output_path=output_path,
+            config=TrainingConfig(tfidf_min_df=1),
+            repeats=3,
+            semantic_model="stub-model",
+            compare_lexical=True,
         )
     assert not output_path.exists()

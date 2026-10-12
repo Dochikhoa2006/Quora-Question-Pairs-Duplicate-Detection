@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Repeated grouped evaluation can compare hybrid and lexical models on identical
+  seeded splits and report paired held-out metric differences
 - Semantic fine-tuning now pins Hub base models to immutable revisions and
   records either the Hub commit or a local directory content digest
 - `qqdup predict --chunk-size` streams large CSV inputs, reuses loaded models,

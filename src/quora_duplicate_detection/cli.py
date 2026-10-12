@@ -73,6 +73,9 @@ def build_parser() -> argparse.ArgumentParser:
     repeated.add_argument("--config", type=Path, help="training JSON; split is forced to grouped")
     repeated.add_argument("--repeats", type=int, default=5, help="number of seeded runs (3-100)")
     repeated.add_argument("--semantic-model", help="optional local/Hugging Face semantic model")
+    repeated.add_argument(
+        "--compare-lexical", action="store_true", help="compare hybrid and lexical on each split"
+    )
 
     semantic = subparsers.add_parser(
         "train-semantic",
@@ -151,6 +154,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 config=TrainingConfig.from_json(args.config),
                 repeats=args.repeats,
                 semantic_model=args.semantic_model,
+                compare_lexical=args.compare_lexical,
             )
         )
     elif args.command == "train-semantic":

@@ -154,6 +154,14 @@ row appeared in a test partition, and the minimum, mean, and maximum pairwise
 Jaccard overlap between test sets. These aggregate counts help reveal repeated
 exposure to the same examples without publishing row identifiers.
 
+To compare a semantic hybrid model with the lexical baseline on the same
+partition for each seed, add `--semantic-model path/to/model --compare-lexical`.
+The report includes both test metric sets and `hybrid_minus_lexical` differences,
+with a descriptive summary of those paired differences. Lower log loss, Brier
+score, and calibration error are better; higher ranking and classification
+metrics are better. Both models use the same split assignments for each seed.
+This is exploratory model comparison because repeated test sets overlap.
+
 Before making scientific or production claims:
 
 1. Construct groups so no normalized question identifier crosses partitions.

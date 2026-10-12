@@ -23,6 +23,28 @@ METRICS = (
     "f1",
     "accuracy",
 )
+METRIC_NAMES = (*METRICS, "expected_calibration_error")
+
+
+def _test_metrics(evaluation: dict[str, Any]) -> dict[str, float]:
+    test = evaluation["test"]
+    return {
+        **{name: test[name] for name in METRICS},
+        "expected_calibration_error": test["calibration"]["expected_calibration_error"],
+    }
+
+
+def _metric_summary(runs: list[dict[str, Any]], key: str) -> dict[str, Any]:
+    summary = {}
+    for name in METRIC_NAMES:
+        values = np.asarray([run[key][name] for run in runs], dtype=np.float64)
+        summary[name] = {
+            "mean": float(values.mean()),
+            "sample_std": float(values.std(ddof=1)),
+            "p2_5": float(np.quantile(values, 0.025)),
+            "p97_5": float(np.quantile(values, 0.975)),
+        }
+    return summary
 
 
 def _test_overlap_summary(test_masks: list[np.ndarray]) -> dict[str, Any]:
@@ -58,10 +80,13 @@ def evaluate_repeated(
     config: TrainingConfig,
     repeats: int = 5,
     semantic_model: str | None = None,
+    compare_lexical: bool = False,
 ) -> dict[str, Any]:
     """Fit independent grouped runs and report the empirical spread of test metrics."""
     if isinstance(repeats, bool) or not isinstance(repeats, int) or not 3 <= repeats <= 100:
         raise ValueError("repeats must be an integer between 3 and 100")
+    if compare_lexical and semantic_model is None:
+        raise ValueError("compare_lexical requires a semantic_model")
     data = load_pairs(data_path, labeled=True)
     grouped_config = replace(config, split_strategy="question_disjoint")
     runs: list[dict[str, Any]] = []
@@ -80,32 +105,37 @@ def evaluate_repeated(
             manifest = json.loads((artifact_dir / "manifest.json").read_text(encoding="utf-8"))
             assignments = pd.read_csv(artifact_dir / "split_assignments.csv")
             test_masks.append(assignments["split"].eq("test").to_numpy(dtype=bool))
-            test = evaluation["test"]
-            runs.append(
-                {
-                    "seed": seed,
-                    "split_sizes": evaluation["split_sizes"],
-                    "split_assignments_sha256": manifest["files"]["split_assignments.csv"],
-                    "selected_threshold": test["threshold"],
-                    "test_metrics": {
-                        **{name: test[name] for name in METRICS},
-                        "expected_calibration_error": test["calibration"][
-                            "expected_calibration_error"
-                        ],
-                    },
+            test_metrics = _test_metrics(evaluation)
+            run = {
+                "seed": seed,
+                "split_sizes": evaluation["split_sizes"],
+                "split_assignments_sha256": manifest["files"]["split_assignments.csv"],
+                "selected_threshold": evaluation["test"]["threshold"],
+                "test_metrics": test_metrics,
+            }
+            if compare_lexical:
+                lexical_dir = Path(temporary) / "lexical_artifact"
+                lexical_evaluation = train_pipeline(
+                    data_path=data_path,
+                    output_dir=lexical_dir,
+                    config=run_config,
+                )
+                lexical_manifest = json.loads(
+                    (lexical_dir / "manifest.json").read_text(encoding="utf-8")
+                )
+                if (
+                    lexical_manifest["files"]["split_assignments.csv"]
+                    != run["split_assignments_sha256"]
+                    or lexical_evaluation["split_sizes"] != run["split_sizes"]
+                ):
+                    raise RuntimeError("paired models did not use identical split assignments")
+                lexical_metrics = _test_metrics(lexical_evaluation)
+                run["lexical_test_metrics"] = lexical_metrics
+                run["hybrid_minus_lexical"] = {
+                    name: test_metrics[name] - lexical_metrics[name] for name in METRIC_NAMES
                 }
-            )
+            runs.append(run)
 
-    metric_names = (*METRICS, "expected_calibration_error")
-    summary = {}
-    for name in metric_names:
-        values = np.asarray([run["test_metrics"][name] for run in runs], dtype=np.float64)
-        summary[name] = {
-            "mean": float(values.mean()),
-            "sample_std": float(values.std(ddof=1)),
-            "p2_5": float(np.quantile(values, 0.025)),
-            "p97_5": float(np.quantile(values, 0.975)),
-        }
     report: dict[str, Any] = {
         "protocol": "repeated_question_disjoint_holdout",
         "uncertainty_interpretation": (
@@ -119,8 +149,20 @@ def evaluate_repeated(
         "repeats": repeats,
         "runs": runs,
         "test_overlap": _test_overlap_summary(test_masks),
-        "summary": summary,
+        "summary": _metric_summary(runs, "test_metrics"),
     }
+    if compare_lexical:
+        report["paired_comparison"] = {
+            "baseline": "lexical",
+            "candidate": "hybrid",
+            "difference": "hybrid_minus_lexical",
+            "same_split_per_seed": True,
+            "interpretation": (
+                "Descriptive paired differences on the same test rows for each seed; "
+                "repeated holdouts overlap and are not independent confidence intervals."
+            ),
+            "summary": _metric_summary(runs, "hybrid_minus_lexical"),
+        }
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
