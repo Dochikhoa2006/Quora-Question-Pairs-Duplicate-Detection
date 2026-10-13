@@ -32,7 +32,8 @@ evidence.
 - [x] Add resumable semantic training and structured trainer telemetry
 - [ ] Compare lexical, frozen semantic, CoSENT, and CoSENT+LoRA under one protocol
 - [x] Add a hardware-aware semantic integration test outside normal core CI
-- [ ] Publish adapter checksums and signed provenance
+- [x] Record and verify saved model and adapter checksums
+- [ ] Publish signed semantic provenance
 
 Acceptance criteria: comparisons use identical splits and calibration rules;
 cost, latency, uncertainty, and limitations are reported beside quality metrics.

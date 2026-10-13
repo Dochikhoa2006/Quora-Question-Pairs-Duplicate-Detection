@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Semantic training summaries now record SHA-256 checksums for saved model and
+  LoRA adapter files; `qqdup verify-semantic` checks the saved artifact
 - Added an opt-in offline semantic integration smoke test covering full and LoRA
   fine-tuning, checkpoint resume, scoring, and hardware/runtime reporting
 - Semantic fine-tuning can resume from a complete checkpoint after verifying

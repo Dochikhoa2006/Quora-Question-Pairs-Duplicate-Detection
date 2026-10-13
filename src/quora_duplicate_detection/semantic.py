@@ -36,6 +36,61 @@ def _local_model_digest(root: Path) -> str:
     return digest.hexdigest()
 
 
+def _model_file_hashes(root: Path) -> dict[str, str]:
+    if not root.is_dir() or root.is_symlink():
+        raise ValueError("semantic model directory is missing or is a symlink")
+    hashes = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"semantic model contains a symlink: {path.relative_to(root)}")
+        if not path.is_file():
+            continue
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        hashes[path.relative_to(root).as_posix()] = digest.hexdigest()
+    if not hashes:
+        raise ValueError("semantic model directory contains no files")
+    return hashes
+
+
+def verify_semantic_artifact(output_dir: str | Path) -> dict[str, Any]:
+    """Verify all saved model files against the training summary's SHA-256 manifest."""
+    output = Path(output_dir)
+    summary = json.loads((output / "training_summary.json").read_text(encoding="utf-8"))
+    expected = summary.get("model_files_sha256")
+    if (
+        not isinstance(expected, dict)
+        or not expected
+        or not all(
+            isinstance(name, str)
+            and isinstance(digest, str)
+            and re.fullmatch(r"[0-9a-f]{64}", digest)
+            for name, digest in expected.items()
+        )
+    ):
+        raise ValueError("semantic training summary has no valid model checksum manifest")
+    actual = _model_file_hashes(output / "model")
+    if actual != expected:
+        raise ValueError("semantic model files do not match the checksum manifest")
+    adapter_files = summary.get("adapter_files_sha256")
+    if summary.get("use_lora"):
+        selected = {
+            name: digest
+            for name, digest in actual.items()
+            if Path(name).name in {"adapter_config.json", "adapter_model.safetensors"}
+        }
+        if adapter_files != selected or not {
+            "adapter_config.json",
+            "adapter_model.safetensors",
+        }.issubset({Path(name).name for name in selected}):
+            raise ValueError("semantic adapter checksum manifest is incomplete or invalid")
+    elif adapter_files is not None:
+        raise ValueError("non-LoRA semantic summary contains adapter checksums")
+    return {"passed": True, "model_files": len(actual), "adapter_files": len(adapter_files or {})}
+
+
 def _resolve_base_model(
     base_model: str, base_revision: str | None
 ) -> tuple[dict[str, str | None], dict[str, str]]:
@@ -319,12 +374,26 @@ def train_semantic_model(
         create_model_card=False,
         safe_serialization=True,
     )
+    model_hashes = _model_file_hashes(output / "model")
+    adapter_hashes = None
+    if use_lora:
+        adapter_hashes = {
+            name: digest
+            for name, digest in model_hashes.items()
+            if Path(name).name in {"adapter_config.json", "adapter_model.safetensors"}
+        }
+        if not {"adapter_config.json", "adapter_model.safetensors"}.issubset(
+            {Path(name).name for name in adapter_hashes}
+        ):
+            raise ValueError("LoRA save did not produce adapter weights and config")
 
     summary: dict[str, Any] = {
         "objective": "CoSENTLoss",
         "base_model": base_model,
         "base_model_provenance": provenance,
         "use_lora": use_lora,
+        "model_files_sha256": model_hashes,
+        "adapter_files_sha256": adapter_hashes,
         "random_seed": random_seed,
         "train_rows": len(train_frame),
         "validation_rows": len(validation_frame),

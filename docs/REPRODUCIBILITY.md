@@ -72,6 +72,11 @@ Semantic training also stores a dataset fingerprint and all resume-critical
 settings in `run_config.json` before fitting. `--resume` checks these values and
 the base model provenance, then resumes from the newest complete checkpoint.
 The final summary includes aggregate training metrics and step history.
+It also lists SHA-256 checksums for all files under `model/`, with separate
+adapter checksums for LoRA runs. Run `qqdup verify-semantic --artifact <run>`
+to detect changed, missing, or extra model files. The summary is stored beside
+the model and is not signed, so these checksums establish integrity only when
+the summary itself comes from a trusted source.
 
 ## Configuration provenance
 

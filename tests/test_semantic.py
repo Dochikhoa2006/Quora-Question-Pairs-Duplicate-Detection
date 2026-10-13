@@ -9,10 +9,49 @@ import pandas as pd
 import pytest
 
 from quora_duplicate_detection.semantic import (
+    _model_file_hashes,
     _numeric_telemetry,
     _prepare_training_run,
     _resolve_base_model,
+    verify_semantic_artifact,
 )
+
+
+def test_semantic_checksum_verifier_detects_model_changes(tmp_path) -> None:
+    model = tmp_path / "model"
+    model.mkdir()
+    weights = model / "model.safetensors"
+    weights.write_bytes(b"weights")
+    summary = {
+        "use_lora": False,
+        "model_files_sha256": _model_file_hashes(model),
+        "adapter_files_sha256": None,
+    }
+    (tmp_path / "training_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    assert verify_semantic_artifact(tmp_path) == {
+        "passed": True,
+        "model_files": 1,
+        "adapter_files": 0,
+    }
+    weights.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="checksum manifest"):
+        verify_semantic_artifact(tmp_path)
+    weights.write_bytes(b"weights")
+    (model / "extra.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="checksum manifest"):
+        verify_semantic_artifact(tmp_path)
+
+
+def test_semantic_checksum_verifier_requires_complete_adapter(tmp_path) -> None:
+    model = tmp_path / "model"
+    model.mkdir()
+    adapter = model / "adapter_model.safetensors"
+    adapter.write_bytes(b"adapter")
+    hashes = _model_file_hashes(model)
+    summary = {"use_lora": True, "model_files_sha256": hashes, "adapter_files_sha256": hashes}
+    (tmp_path / "training_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    with pytest.raises(ValueError, match="adapter checksum manifest"):
+        verify_semantic_artifact(tmp_path)
 
 
 def test_hub_revision_is_resolved_and_pinned_before_model_load(monkeypatch) -> None:

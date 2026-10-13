@@ -21,7 +21,11 @@ pytest.importorskip("datasets")
 
 from transformers import BertConfig, BertModel, BertTokenizerFast  # noqa: E402
 
-from quora_duplicate_detection.semantic import SemanticScorer, train_semantic_model  # noqa: E402
+from quora_duplicate_detection.semantic import (  # noqa: E402
+    SemanticScorer,
+    train_semantic_model,
+    verify_semantic_artifact,
+)
 
 pytestmark = pytest.mark.semantic_integration
 
@@ -102,6 +106,11 @@ def test_offline_semantic_train_checkpoint_resume_and_scoring(
     assert summary["base_model_provenance"]["source"] == "local_directory"
     assert summary["evaluation"]
     assert json.loads((output / "training_summary.json").read_text(encoding="utf-8")) == summary
+    assert verify_semantic_artifact(output)["model_files"] == len(summary["model_files_sha256"])
+    if use_lora:
+        assert {"adapter_config.json", "adapter_model.safetensors"}.issubset(
+            {path.rsplit("/", 1)[-1] for path in summary["adapter_files_sha256"]}
+        )
     scorer = SemanticScorer(output / "model", batch_size=2)
     assert np.isfinite(scorer.score(frame.iloc[:2])).all()
 
@@ -109,3 +118,4 @@ def test_offline_semantic_train_checkpoint_resume_and_scoring(
     resumed = train_semantic_model(frame, **options, resume=True)
     assert resumed["resumed_from_checkpoint"].startswith("checkpoint-")
     assert resumed["trainer"]["global_step"] >= summary["trainer"]["global_step"]
+    assert verify_semantic_artifact(output)["passed"]

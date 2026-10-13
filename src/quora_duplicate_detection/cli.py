@@ -18,7 +18,7 @@ from quora_duplicate_detection.pipeline import (
     train_pipeline,
 )
 from quora_duplicate_detection.repeated import evaluate_repeated
-from quora_duplicate_detection.semantic import train_semantic_model
+from quora_duplicate_detection.semantic import train_semantic_model, verify_semantic_artifact
 
 
 def _print_json(payload: object) -> None:
@@ -100,6 +100,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     inspect = subparsers.add_parser("inspect", help="verify and print an artifact manifest")
     inspect.add_argument("--artifact", required=True, type=Path)
+    verify_semantic = subparsers.add_parser(
+        "verify-semantic", help="verify saved semantic model checksums"
+    )
+    verify_semantic.add_argument("--artifact", required=True, type=Path)
     audit = subparsers.add_parser(
         "audit-split", help="replay saved splits and evaluation against labeled data"
     )
@@ -179,6 +183,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
     elif args.command == "inspect":
         _print_json(load_artifact(args.artifact).manifest)
+    elif args.command == "verify-semantic":
+        _print_json(verify_semantic_artifact(args.artifact))
     elif args.command == "audit-split":
         report = audit_split(
             data_path=args.data,

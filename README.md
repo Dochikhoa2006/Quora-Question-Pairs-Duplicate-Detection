@@ -210,6 +210,9 @@ Training writes `run_config.json` before fitting and records aggregate trainer
 metrics in `training_summary.json`. If a run stops after a checkpoint was saved,
 repeat the command with `--resume` and the same data, model, and settings. Resume
 rejects changed inputs or settings and requires a complete checkpoint.
+The summary also records SHA-256 checksums for every saved model file, including
+LoRA adapter weights and config when `--lora` is used. Verify a saved run with
+`qqdup verify-semantic --artifact artifacts/semantic-cosent`.
 Run `make test-semantic` after installing the optional dependencies to exercise
 offline full and LoRA fine-tuning, checkpoint resume, and scoring with a tiny
 local model.
