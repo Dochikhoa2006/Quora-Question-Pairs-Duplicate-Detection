@@ -191,6 +191,8 @@ qqdup compare-artifacts \
   --output outputs/external_comparison.json \
   --model lexical=artifacts/lexical-v1 \
   --model cosent=artifacts/hybrid-cosent \
+  --training-data lexical=data/lexical_train.csv \
+  --training-data cosent=data/cosent_train.csv \
   --baseline lexical
 ```
 
@@ -198,6 +200,11 @@ The report gives paired metric differences and stratified bootstrap percentiles.
 Keep this holdout separate from all training, calibration, and model selection.
 Use `--semantic-model cosent=path/to/model` if a saved semantic reference needs
 an explicit local override.
+When original labeled training files are available, pass one `--training-data`
+entry per model. Their fingerprints must match the saved manifests. The command
+then rejects external rows sharing either normalized question with that model's
+training data, including reversed pairs. Omit this option only when the original
+data is unavailable; the report records `null` for unchecked models.
 
 ### Optional semantic fine-tuning
 

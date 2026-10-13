@@ -58,6 +58,7 @@ def test_compare_artifacts_is_paired_reproducible_and_aggregate(
     assert json.loads((tmp_path / "first.json").read_text(encoding="utf-8")) == first
     assert first["rows"] > 0
     assert first["models"]["lexical"]["components"] == ["lexical_probability"]
+    assert first["models"]["lexical"]["training_overlap_check"] is None
     assert "semantic_cosine" in first["models"]["hybrid"]["components"]
     difference = first["comparisons"]["hybrid"]["candidate_minus_baseline"]
     assert difference["brier_score"] == pytest.approx(
@@ -87,8 +88,46 @@ def test_compare_rejects_exact_training_data_and_does_not_write(
     assert not output.exists()
 
 
+def test_compare_verifies_training_data_and_rejects_shared_questions(
+    comparison_inputs, tmp_path
+) -> None:
+    training_path, external_path, lexical_dir, hybrid_dir = comparison_inputs
+    options = {
+        "data_path": external_path,
+        "output_path": tmp_path / "verified.json",
+        "models": {"lexical": lexical_dir, "hybrid": hybrid_dir},
+        "baseline": "lexical",
+        "training_data": {"lexical": training_path, "hybrid": training_path},
+        "bootstrap_samples": 100,
+    }
+    report = compare_artifacts(**options)
+    assert report["models"]["lexical"]["training_overlap_check"] == {
+        "shared_pair_rows": 0,
+        "shared_question_rows": 0,
+    }
+
+    shared = pd.read_csv(external_path)
+    original = pd.read_csv(training_path)
+    shared.loc[0, "question1"] = original.loc[0, "question2"]
+    shared.to_csv(external_path, index=False)
+    with pytest.raises(ValueError, match="shares 0 pair rows and 1 question rows"):
+        compare_artifacts(**options)
+    assert json.loads(options["output_path"].read_text()) == report
+
+    shared.loc[0, "question1"] = original.loc[0, "question2"]
+    shared.loc[0, "question2"] = original.loc[0, "question1"]
+    shared.to_csv(external_path, index=False)
+    with pytest.raises(ValueError, match="shares 1 pair rows"):
+        compare_artifacts(**options)
+
+    wrong = tmp_path / "wrong.csv"
+    pd.read_csv(external_path).to_csv(wrong, index=False)
+    with pytest.raises(ValueError, match="fingerprint does not match"):
+        compare_artifacts(**{**options, "training_data": {"lexical": wrong}})
+
+
 def test_compare_cli_parses_labeled_artifacts(comparison_inputs, tmp_path, capsys) -> None:
-    _, external_path, lexical_dir, hybrid_dir = comparison_inputs
+    training_path, external_path, lexical_dir, hybrid_dir = comparison_inputs
     output = tmp_path / "comparison.json"
     cli.main(
         [
@@ -101,13 +140,18 @@ def test_compare_cli_parses_labeled_artifacts(comparison_inputs, tmp_path, capsy
             f"lexical={lexical_dir}",
             "--model",
             f"hybrid={hybrid_dir}",
+            "--training-data",
+            f"lexical={training_path}",
             "--baseline",
             "lexical",
             "--bootstrap-samples",
             "100",
         ]
     )
-    assert json.loads(capsys.readouterr().out) == json.loads(output.read_text(encoding="utf-8"))
+    report = json.loads(capsys.readouterr().out)
+    assert report == json.loads(output.read_text(encoding="utf-8"))
+    assert report["models"]["lexical"]["training_overlap_check"]["shared_question_rows"] == 0
+    assert report["models"]["hybrid"]["training_overlap_check"] is None
 
 
 def test_compare_validation_rejects_invalid_setup_before_reading_data(tmp_path) -> None:
@@ -120,6 +164,13 @@ def test_compare_validation_rejects_invalid_setup_before_reading_data(tmp_path) 
             models={"a": tmp_path, "b": tmp_path},
             baseline="a",
             semantic_models={"other": "model"},
+        )
+    with pytest.raises(ValueError, match="unknown model label"):
+        compare_artifacts(
+            **base,
+            models={"a": tmp_path, "b": tmp_path},
+            baseline="a",
+            training_data={"other": tmp_path},
         )
     with pytest.raises(ValueError, match="bootstrap_samples"):
         compare_artifacts(

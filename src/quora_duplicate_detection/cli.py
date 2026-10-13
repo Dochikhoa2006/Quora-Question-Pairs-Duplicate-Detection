@@ -98,6 +98,12 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--data", required=True, type=Path)
     compare.add_argument("--output", required=True, type=Path)
     compare.add_argument("--model", required=True, action="append", help="LABEL=ARTIFACT; repeat")
+    compare.add_argument(
+        "--training-data",
+        action="append",
+        default=[],
+        help="LABEL=CSV used to train a model; verify provenance and reject overlapping questions",
+    )
     compare.add_argument("--baseline", required=True, help="label of the baseline model")
     compare.add_argument(
         "--semantic-model", action="append", default=[], help="LABEL=MODEL override; repeat"
@@ -206,6 +212,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 models=_labeled_paths(args.model, option="--model"),
                 baseline=args.baseline,
                 semantic_models=_labeled_paths(args.semantic_model, option="--semantic-model"),
+                training_data=_labeled_paths(args.training_data, option="--training-data"),
                 bootstrap_samples=args.bootstrap_samples,
                 random_seed=args.seed,
             )

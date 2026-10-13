@@ -12,7 +12,12 @@ import numpy as np
 
 from quora_duplicate_detection.artifacts import load_artifact
 from quora_duplicate_detection.config import TrainingConfig
-from quora_duplicate_detection.data import LABEL_COLUMN, dataset_fingerprint, load_pairs
+from quora_duplicate_detection.data import (
+    LABEL_COLUMN,
+    PAIR_COLUMNS,
+    dataset_fingerprint,
+    load_pairs,
+)
 from quora_duplicate_detection.metrics import evaluate_probabilities
 from quora_duplicate_detection.pipeline import predict_probabilities
 from quora_duplicate_detection.repeated import METRIC_NAMES
@@ -30,6 +35,22 @@ def _metrics(labels: np.ndarray, probabilities: np.ndarray, threshold: float) ->
     }
 
 
+def _overlap_counts(external: Any, training: Any) -> dict[str, int]:
+    """Count rows sharing an unordered pair or any normalized question."""
+    training_pairs = {
+        tuple(sorted(pair))
+        for pair in training[list(PAIR_COLUMNS)].itertuples(index=False, name=None)
+    }
+    training_questions = set(training[PAIR_COLUMNS[0]]) | set(training[PAIR_COLUMNS[1]])
+    pairs = external[list(PAIR_COLUMNS)].itertuples(index=False, name=None)
+    pair_rows = 0
+    question_rows = 0
+    for first, second in pairs:
+        pair_rows += tuple(sorted((first, second))) in training_pairs
+        question_rows += first in training_questions or second in training_questions
+    return {"shared_pair_rows": pair_rows, "shared_question_rows": question_rows}
+
+
 def compare_artifacts(
     *,
     data_path: str | Path,
@@ -37,6 +58,7 @@ def compare_artifacts(
     models: dict[str, str | Path],
     baseline: str,
     semantic_models: dict[str, str] | None = None,
+    training_data: dict[str, str | Path] | None = None,
     bootstrap_samples: int = 200,
     random_seed: int = 42,
 ) -> dict[str, Any]:
@@ -48,6 +70,9 @@ def compare_artifacts(
     overrides = semantic_models or {}
     if set(overrides) - set(models):
         raise ValueError("semantic model override refers to an unknown model label")
+    source_data = training_data or {}
+    if set(source_data) - set(models):
+        raise ValueError("training data refers to an unknown model label")
     if (
         isinstance(bootstrap_samples, bool)
         or not isinstance(bootstrap_samples, int)
@@ -70,6 +95,17 @@ def compare_artifacts(
         training = artifact.manifest.get("training", {})
         if training.get("dataset_fingerprint_sha256") == fingerprint:
             raise ValueError(f"evaluation data matches training data for model: {label}")
+        overlap = None
+        if label in source_data:
+            original = load_pairs(source_data[label], labeled=True)
+            if dataset_fingerprint(original) != training["dataset_fingerprint_sha256"]:
+                raise ValueError(f"training data fingerprint does not match model: {label}")
+            overlap = _overlap_counts(frame, original)
+            if overlap["shared_question_rows"]:
+                raise ValueError(
+                    f"external data shares {overlap['shared_pair_rows']} pair rows and "
+                    f"{overlap['shared_question_rows']} question rows with model: {label}"
+                )
         config = TrainingConfig(**training["config"])
         scores = predict_probabilities(
             frame,
@@ -87,6 +123,7 @@ def compare_artifacts(
             "components": list(artifact.fusion.component_names),
             "threshold": artifact.threshold,
             "metrics": _metrics(labels, scores, artifact.threshold),
+            "training_overlap_check": overlap,
         }
 
     rng = np.random.default_rng(random_seed)
