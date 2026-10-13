@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Added external labeled-set comparison for saved detectors with paired
+  stratified bootstrap metric differences and aggregate provenance
 - Added optional Ed25519 provenance signing for completed semantic runs and
   trusted public key verification of metadata and model checksums
 - Semantic training summaries now record SHA-256 checksums for saved model and

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from quora_duplicate_detection.artifacts import load_artifact
 from quora_duplicate_detection.audit import audit_split
+from quora_duplicate_detection.compare import compare_artifacts
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import load_pairs
 from quora_duplicate_detection.pipeline import (
@@ -27,6 +28,16 @@ from quora_duplicate_detection.semantic import train_semantic_model, verify_sema
 
 def _print_json(payload: object) -> None:
     print(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def _labeled_paths(items: list[str], *, option: str) -> dict[str, str]:
+    parsed = {}
+    for item in items:
+        label, separator, path = item.partition("=")
+        if not separator or not label or not path or label in parsed:
+            raise ValueError(f"{option} requires unique LABEL=PATH entries")
+        parsed[label] = path
+    return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -80,6 +91,19 @@ def build_parser() -> argparse.ArgumentParser:
     repeated.add_argument(
         "--compare-lexical", action="store_true", help="compare hybrid and lexical on each split"
     )
+
+    compare = subparsers.add_parser(
+        "compare-artifacts", help="compare saved detectors on one external labeled CSV"
+    )
+    compare.add_argument("--data", required=True, type=Path)
+    compare.add_argument("--output", required=True, type=Path)
+    compare.add_argument("--model", required=True, action="append", help="LABEL=ARTIFACT; repeat")
+    compare.add_argument("--baseline", required=True, help="label of the baseline model")
+    compare.add_argument(
+        "--semantic-model", action="append", default=[], help="LABEL=MODEL override; repeat"
+    )
+    compare.add_argument("--bootstrap-samples", type=int, default=200)
+    compare.add_argument("--seed", type=int, default=42)
 
     semantic = subparsers.add_parser(
         "train-semantic",
@@ -172,6 +196,18 @@ def main(argv: Sequence[str] | None = None) -> None:
                 repeats=args.repeats,
                 semantic_model=args.semantic_model,
                 compare_lexical=args.compare_lexical,
+            )
+        )
+    elif args.command == "compare-artifacts":
+        _print_json(
+            compare_artifacts(
+                data_path=args.data,
+                output_path=args.output,
+                models=_labeled_paths(args.model, option="--model"),
+                baseline=args.baseline,
+                semantic_models=_labeled_paths(args.semantic_model, option="--semantic-model"),
+                bootstrap_samples=args.bootstrap_samples,
+                random_seed=args.seed,
             )
         )
     elif args.command == "train-semantic":

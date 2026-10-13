@@ -162,6 +162,22 @@ score, and calibration error are better; higher ranking and classification
 metrics are better. Both models use the same split assignments for each seed.
 This is exploratory model comparison because repeated test sets overlap.
 
+For a frozen comparison across two or more saved detectors, use a separate
+labeled file and `qqdup compare-artifacts --data external.csv --output report.json
+--model lexical=artifacts/lexical --model cosent=artifacts/cosent
+--baseline lexical`. Each artifact supplies its already selected threshold;
+all models score the same rows. The command rejects a file whose complete
+dataset fingerprint exactly matches any artifact's training data. It cannot
+detect partial overlap, so protect the external set independently and do not
+use it to tune or choose a winner before making a final claim.
+
+The report contains artifact manifest hashes, aggregate metrics, candidate
+minus baseline differences, and 2.5/97.5 percentiles from a stratified paired
+bootstrap. The resampling preserves class counts and uses the same sampled rows
+for every model. These percentiles describe sampling variation on the chosen
+external set, conditional on fixed trained artifacts and thresholds; they do
+not include training variation. No question text or row predictions are saved.
+
 Before making scientific or production claims:
 
 1. Construct groups so no normalized question identifier crosses partitions.

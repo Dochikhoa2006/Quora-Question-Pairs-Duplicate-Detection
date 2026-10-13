@@ -183,6 +183,22 @@ Pairs connected by any normalized question stay in the same partition. This
 protocol can produce uneven partition sizes or fail when too few independent
 components contain both labels. See [evaluation methodology](docs/EVALUATION.md).
 
+Compare saved lexical and semantic detectors on the same external labeled set:
+
+```bash
+qqdup compare-artifacts \
+  --data data/external_holdout.csv \
+  --output outputs/external_comparison.json \
+  --model lexical=artifacts/lexical-v1 \
+  --model cosent=artifacts/hybrid-cosent \
+  --baseline lexical
+```
+
+The report gives paired metric differences and stratified bootstrap percentiles.
+Keep this holdout separate from all training, calibration, and model selection.
+Use `--semantic-model cosent=path/to/model` if a saved semantic reference needs
+an explicit local override.
+
 ### Optional semantic fine-tuning
 
 Install the optional dependencies:
