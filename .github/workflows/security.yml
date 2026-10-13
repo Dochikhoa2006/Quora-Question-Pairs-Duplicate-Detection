@@ -25,6 +25,7 @@ jobs:
         run: |
           pip-audit --requirement requirements.txt
           pip-audit --requirement requirements-semantic.txt
+          pip-audit --requirement requirements-signing.txt
       - name: Static security scan
         run: bandit -q -r src
 

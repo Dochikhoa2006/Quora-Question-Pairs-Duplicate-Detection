@@ -78,6 +78,25 @@ to detect changed, missing, or extra model files. The summary is stored beside
 the model and is not signed, so these checksums establish integrity only when
 the summary itself comes from a trusted source.
 
+For a signed record, install `requirements-signing.txt` and generate an Ed25519
+key pair outside the artifact directory:
+
+```bash
+umask 077
+openssl genpkey -algorithm Ed25519 -out private.pem
+openssl pkey -in private.pem -pubout -out public.pem
+qqdup sign-semantic --artifact artifacts/semantic-cosent --private-key private.pem
+qqdup verify-semantic --artifact artifacts/semantic-cosent --public-key public.pem
+```
+
+`semantic_provenance.json` signs SHA-256 digests of `run_config.json` and
+`training_summary.json`. The signed summary binds the saved model and adapter
+files through their checksums. Verification requires a trusted public key;
+the key fingerprint inside the artifact alone does not establish ownership.
+Store and distribute the public key independently, never ship the private key
+with the artifact, and sign only after the training run is final. A resumed run
+must be signed again after removing any stale provenance file.
+
 ## Configuration provenance
 
 Start from `config/default.json` and commit any experiment configuration under a

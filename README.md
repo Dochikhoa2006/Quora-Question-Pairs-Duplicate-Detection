@@ -213,6 +213,12 @@ rejects changed inputs or settings and requires a complete checkpoint.
 The summary also records SHA-256 checksums for every saved model file, including
 LoRA adapter weights and config when `--lora` is used. Verify a saved run with
 `qqdup verify-semantic --artifact artifacts/semantic-cosent`.
+To sign the run metadata and checksum manifest, install
+`requirements-signing.txt`, create an Ed25519 key pair outside the artifact,
+and run `qqdup sign-semantic --artifact artifacts/semantic-cosent --private-key private.pem`.
+Recipients can verify the model, metadata, and signature with
+`qqdup verify-semantic --artifact artifacts/semantic-cosent --public-key public.pem`.
+Keep the private key secret and distribute the public key through a trusted channel.
 Run `make test-semantic` after installing the optional dependencies to exercise
 offline full and LoRA fine-tuning, checkpoint resume, and scoring with a tiny
 local model.

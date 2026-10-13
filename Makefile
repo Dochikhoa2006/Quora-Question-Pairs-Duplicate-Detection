@@ -32,6 +32,7 @@ security:
 	bandit -q -r src
 	pip-audit --requirement requirements.txt
 	pip-audit --requirement requirements-semantic.txt
+	pip-audit --requirement requirements-signing.txt
 
 package:
 	python -m pip wheel --no-deps --wheel-dir dist .

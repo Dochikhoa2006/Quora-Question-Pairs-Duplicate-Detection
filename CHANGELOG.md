@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Added optional Ed25519 provenance signing for completed semantic runs and
+  trusted public key verification of metadata and model checksums
 - Semantic training summaries now record SHA-256 checksums for saved model and
   LoRA adapter files; `qqdup verify-semantic` checks the saved artifact
 - Added an opt-in offline semantic integration smoke test covering full and LoRA

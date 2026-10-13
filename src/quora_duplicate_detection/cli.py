@@ -17,6 +17,10 @@ from quora_duplicate_detection.pipeline import (
     evaluate_labeled_file,
     train_pipeline,
 )
+from quora_duplicate_detection.provenance import (
+    sign_semantic_artifact,
+    verify_signed_semantic_artifact,
+)
 from quora_duplicate_detection.repeated import evaluate_repeated
 from quora_duplicate_detection.semantic import train_semantic_model, verify_semantic_artifact
 
@@ -104,6 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
         "verify-semantic", help="verify saved semantic model checksums"
     )
     verify_semantic.add_argument("--artifact", required=True, type=Path)
+    verify_semantic.add_argument(
+        "--public-key", type=Path, help="verify detached Ed25519 provenance with this trusted key"
+    )
+    sign_semantic = subparsers.add_parser("sign-semantic", help="sign a completed semantic run")
+    sign_semantic.add_argument("--artifact", required=True, type=Path)
+    sign_semantic.add_argument("--private-key", required=True, type=Path)
     audit = subparsers.add_parser(
         "audit-split", help="replay saved splits and evaluation against labeled data"
     )
@@ -184,7 +194,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "inspect":
         _print_json(load_artifact(args.artifact).manifest)
     elif args.command == "verify-semantic":
-        _print_json(verify_semantic_artifact(args.artifact))
+        _print_json(
+            verify_signed_semantic_artifact(args.artifact, args.public_key)
+            if args.public_key
+            else verify_semantic_artifact(args.artifact)
+        )
+    elif args.command == "sign-semantic":
+        _print_json(sign_semantic_artifact(args.artifact, args.private_key))
     elif args.command == "audit-split":
         report = audit_split(
             data_path=args.data,
