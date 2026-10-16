@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- External comparison reports now replace the destination atomically
 - External artifact comparison rejects the same saved model under multiple labels
 - Added external labeled-set comparison for saved detectors with paired
   stratified bootstrap metric differences and aggregate provenance

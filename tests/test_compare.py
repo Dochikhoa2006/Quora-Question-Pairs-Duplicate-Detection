@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from quora_duplicate_detection import cli, pipeline
+from quora_duplicate_detection import compare as comparison_module
 from quora_duplicate_detection.compare import compare_artifacts
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.pipeline import train_pipeline
@@ -138,6 +139,29 @@ def test_compare_rejects_duplicate_artifacts(comparison_inputs, tmp_path) -> Non
             bootstrap_samples=100,
         )
     assert not output.exists()
+
+
+def test_compare_keeps_existing_report_if_replace_fails(
+    comparison_inputs, tmp_path, monkeypatch
+) -> None:
+    _, external_path, lexical_dir, hybrid_dir = comparison_inputs
+    output = tmp_path / "comparison.json"
+    output.write_text('{"previous": true}\n', encoding="utf-8")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(comparison_module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replacement failure"):
+        compare_artifacts(
+            data_path=external_path,
+            output_path=output,
+            models={"lexical": lexical_dir, "hybrid": hybrid_dir},
+            baseline="lexical",
+            bootstrap_samples=100,
+        )
+    assert output.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert list(tmp_path.glob(".qqdup-*.json")) == []
 
 
 def test_compare_cli_parses_labeled_artifacts(comparison_inputs, tmp_path, capsys) -> None:
