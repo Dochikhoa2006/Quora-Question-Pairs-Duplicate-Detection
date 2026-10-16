@@ -90,8 +90,15 @@ def compare_artifacts(
     probabilities: dict[str, np.ndarray] = {}
     thresholds: dict[str, float] = {}
     model_reports: dict[str, Any] = {}
+    seen_manifests: dict[str, str] = {}
     for label, directory in models.items():
         artifact = load_artifact(directory)
+        manifest_hash = hashlib.sha256((Path(directory) / "manifest.json").read_bytes()).hexdigest()
+        if manifest_hash in seen_manifests:
+            raise ValueError(
+                f"models {seen_manifests[manifest_hash]} and {label} use the same artifact manifest"
+            )
+        seen_manifests[manifest_hash] = label
         training = artifact.manifest.get("training", {})
         if training.get("dataset_fingerprint_sha256") == fingerprint:
             raise ValueError(f"evaluation data matches training data for model: {label}")
@@ -116,9 +123,7 @@ def compare_artifacts(
         probabilities[label] = scores
         thresholds[label] = artifact.threshold
         model_reports[label] = {
-            "artifact_manifest_sha256": hashlib.sha256(
-                (Path(directory) / "manifest.json").read_bytes()
-            ).hexdigest(),
+            "artifact_manifest_sha256": manifest_hash,
             "training_dataset_fingerprint_sha256": training["dataset_fingerprint_sha256"],
             "components": list(artifact.fusion.component_names),
             "threshold": artifact.threshold,

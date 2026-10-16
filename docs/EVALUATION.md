@@ -167,7 +167,8 @@ labeled file and `qqdup compare-artifacts --data external.csv --output report.js
 --model lexical=artifacts/lexical --model cosent=artifacts/cosent
 --baseline lexical`. Each artifact supplies its already selected threshold;
 all models score the same rows. The command rejects a file whose complete
-dataset fingerprint exactly matches any artifact's training data. It cannot
+dataset fingerprint exactly matches any artifact's training data, and rejects
+duplicate artifact manifests under different model labels. It cannot
 detect partial overlap, so protect the external set independently and do not
 use it to tune or choose a winner before making a final claim.
 

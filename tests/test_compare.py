@@ -126,6 +126,20 @@ def test_compare_verifies_training_data_and_rejects_shared_questions(
         compare_artifacts(**{**options, "training_data": {"lexical": wrong}})
 
 
+def test_compare_rejects_duplicate_artifacts(comparison_inputs, tmp_path) -> None:
+    _, external_path, lexical_dir, _ = comparison_inputs
+    output = tmp_path / "duplicate.json"
+    with pytest.raises(ValueError, match="same artifact manifest"):
+        compare_artifacts(
+            data_path=external_path,
+            output_path=output,
+            models={"first": lexical_dir, "second": lexical_dir},
+            baseline="first",
+            bootstrap_samples=100,
+        )
+    assert not output.exists()
+
+
 def test_compare_cli_parses_labeled_artifacts(comparison_inputs, tmp_path, capsys) -> None:
     training_path, external_path, lexical_dir, hybrid_dir = comparison_inputs
     output = tmp_path / "comparison.json"

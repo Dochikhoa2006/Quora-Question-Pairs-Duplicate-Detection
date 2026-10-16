@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- External artifact comparison rejects the same saved model under multiple labels
 - Added external labeled-set comparison for saved detectors with paired
   stratified bootstrap metric differences and aggregate provenance
 - Added optional Ed25519 provenance signing for completed semantic runs and
