@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Training configuration rejects non-finite logistic regularization values
 - Evaluation clips probabilities only for log loss, preserving extreme scores in
   ranking, Brier, and threshold metrics
 - External comparison reports now replace the destination atomically

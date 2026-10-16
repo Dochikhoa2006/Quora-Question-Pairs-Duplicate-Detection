@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
@@ -34,8 +35,8 @@ class TrainingConfig:
             raise ValueError("validation_size + test_size must be less than 1")
         if self.threshold_metric not in {"f1", "accuracy", "balanced_accuracy"}:
             raise ValueError("threshold_metric must be f1, accuracy, or balanced_accuracy")
-        if self.logistic_c <= 0:
-            raise ValueError("logistic_c must be positive")
+        if not math.isfinite(self.logistic_c) or self.logistic_c <= 0:
+            raise ValueError("logistic_c must be finite and positive")
         if self.max_iter < 1:
             raise ValueError("max_iter must be positive")
         if not 1 <= self.char_ngram_min <= self.char_ngram_max:
