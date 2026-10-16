@@ -41,3 +41,12 @@ def test_evaluation_includes_calibration_without_changing_probability_metrics() 
     assert report["brier_score"] == pytest.approx(0.0625)
     assert report["calibration"]["expected_calibration_error"] == pytest.approx(0.25)
     assert sum(item["count"] for item in report["calibration"]["reliability_bins"]) == 2
+
+
+def test_evaluation_clips_only_log_loss() -> None:
+    report = evaluate_probabilities(np.array([0, 1]), np.array([0.0, 5e-8]), threshold=2e-8)
+    assert report["confusion_matrix"] == [[1, 0], [0, 1]]
+    assert report["roc_auc"] == 1.0
+    assert report["average_precision"] == 1.0
+    assert report["brier_score"] == pytest.approx((1 - 5e-8) ** 2 / 2)
+    assert np.isfinite(report["log_loss"])
