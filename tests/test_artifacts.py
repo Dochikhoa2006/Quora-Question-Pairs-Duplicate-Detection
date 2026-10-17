@@ -151,6 +151,18 @@ def test_artifact_rejects_text_array_even_with_matching_hash(saved_artifact) -> 
         load_artifact(saved_artifact)
 
 
+@pytest.mark.parametrize("invalid_weight", [np.nan, np.inf, 0.0])
+def test_artifact_rejects_invalid_idf_weight(saved_artifact, invalid_weight) -> None:
+    archive_path = saved_artifact / "model.npz"
+    with np.load(archive_path, allow_pickle=False) as stored:
+        arrays = {name: stored[name] for name in stored.files}
+    arrays["tfidf_idf"][0] = invalid_weight
+    np.savez_compressed(archive_path, **arrays)
+    _update_hash(saved_artifact, "model.npz")
+    with pytest.raises(ValueError, match="IDF weights must be finite and positive"):
+        load_artifact(saved_artifact)
+
+
 @pytest.mark.parametrize("invalid_index", [0.5, True, "0"])
 def test_artifact_rejects_non_integer_vocabulary_index(saved_artifact, invalid_index) -> None:
     vocabulary_path = saved_artifact / "vocabulary.json"

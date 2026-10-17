@@ -225,5 +225,7 @@ class PairFeatureExtractor:
         idf_array = np.asarray(list(idf), dtype=np.float64)
         if idf_array.shape != (len(vocabulary),):
             raise ValueError("TF-IDF IDF vector does not match the vocabulary")
+        if not np.isfinite(idf_array).all() or (idf_array <= 0).any():
+            raise ValueError("TF-IDF IDF weights must be finite and positive")
         extractor.vectorizer.idf_ = idf_array
         return extractor
