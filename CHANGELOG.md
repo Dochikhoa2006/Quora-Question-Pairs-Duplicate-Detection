@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Training numeric settings reject booleans and strings with clear config errors
 - Artifact loading rejects non-finite or nonpositive TF-IDF weights
 - Artifact loading validates threshold and selection-metric metadata
 - Artifact loading validates vectorizer integer settings without coercion

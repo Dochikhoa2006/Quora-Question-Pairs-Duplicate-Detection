@@ -13,6 +13,10 @@ def _positive_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
+def _finite_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
 @dataclass(frozen=True)
 class TrainingConfig:
     random_seed: int = 42
@@ -37,15 +41,15 @@ class TrainingConfig:
             raise ValueError("random_seed must be an integer between 0 and 2**32 - 1")
         if self.split_strategy not in {"pair_stratified", "question_disjoint"}:
             raise ValueError("split_strategy must be pair_stratified or question_disjoint")
-        if not 0 < self.validation_size < 1:
+        if not _finite_number(self.validation_size) or not 0 < self.validation_size < 1:
             raise ValueError("validation_size must be between 0 and 1")
-        if not 0 < self.test_size < 1:
+        if not _finite_number(self.test_size) or not 0 < self.test_size < 1:
             raise ValueError("test_size must be between 0 and 1")
         if self.validation_size + self.test_size >= 1:
             raise ValueError("validation_size + test_size must be less than 1")
         if self.threshold_metric not in {"f1", "accuracy", "balanced_accuracy"}:
             raise ValueError("threshold_metric must be f1, accuracy, or balanced_accuracy")
-        if not math.isfinite(self.logistic_c) or self.logistic_c <= 0:
+        if not _finite_number(self.logistic_c) or self.logistic_c <= 0:
             raise ValueError("logistic_c must be finite and positive")
         if not _positive_int(self.max_iter):
             raise ValueError("max_iter must be a positive integer")
