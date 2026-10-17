@@ -41,10 +41,17 @@ def test_config_round_trip_and_unknown_keys(tmp_path) -> None:
         ({"logistic_c": math.nan}, "logistic_c"),
         ({"logistic_c": math.inf}, "logistic_c"),
         ({"max_iter": 0}, "max_iter"),
+        ({"max_iter": True}, "max_iter"),
+        ({"max_iter": 1.5}, "max_iter"),
         ({"char_ngram_min": 5, "char_ngram_max": 3}, "n-gram"),
+        ({"char_ngram_min": True}, "n-gram"),
+        ({"char_ngram_max": 3.5}, "n-gram"),
         ({"tfidf_max_features": 0}, "TF-IDF"),
+        ({"tfidf_max_features": True}, "TF-IDF"),
         ({"tfidf_min_df": 0}, "TF-IDF"),
+        ({"tfidf_min_df": 1.5}, "TF-IDF"),
         ({"semantic_batch_size": 0}, "semantic_batch_size"),
+        ({"semantic_batch_size": True}, "semantic_batch_size"),
     ],
 )
 def test_invalid_config_is_rejected(settings, message) -> None:

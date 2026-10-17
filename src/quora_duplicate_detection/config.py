@@ -9,6 +9,10 @@ from pathlib import Path
 from typing import Any
 
 
+def _positive_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
 @dataclass(frozen=True)
 class TrainingConfig:
     random_seed: int = 42
@@ -43,14 +47,18 @@ class TrainingConfig:
             raise ValueError("threshold_metric must be f1, accuracy, or balanced_accuracy")
         if not math.isfinite(self.logistic_c) or self.logistic_c <= 0:
             raise ValueError("logistic_c must be finite and positive")
-        if self.max_iter < 1:
-            raise ValueError("max_iter must be positive")
-        if not 1 <= self.char_ngram_min <= self.char_ngram_max:
-            raise ValueError("character n-gram bounds are invalid")
-        if self.tfidf_max_features < 1 or self.tfidf_min_df < 1:
-            raise ValueError("TF-IDF settings must be positive")
-        if self.semantic_batch_size < 1:
-            raise ValueError("semantic_batch_size must be positive")
+        if not _positive_int(self.max_iter):
+            raise ValueError("max_iter must be a positive integer")
+        if (
+            not _positive_int(self.char_ngram_min)
+            or not _positive_int(self.char_ngram_max)
+            or self.char_ngram_min > self.char_ngram_max
+        ):
+            raise ValueError("character n-gram bounds must be positive integers in order")
+        if not _positive_int(self.tfidf_max_features) or not _positive_int(self.tfidf_min_df):
+            raise ValueError("TF-IDF settings must be positive integers")
+        if not _positive_int(self.semantic_batch_size):
+            raise ValueError("semantic_batch_size must be a positive integer")
 
     @classmethod
     def from_json(cls, path: str | Path | None) -> TrainingConfig:
