@@ -192,16 +192,18 @@ def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
         )
 
 
-def test_chunked_predictions_preserve_mixed_identifier_text(
-    tmp_path, pair_frame: pd.DataFrame
+@pytest.mark.parametrize("identifier", ["id", "test_id"])
+def test_predictions_preserve_mixed_identifier_text(
+    tmp_path, pair_frame: pd.DataFrame, identifier: str
 ) -> None:
     training_csv = tmp_path / "train.csv"
     input_csv = tmp_path / "input.csv"
     artifact_dir = tmp_path / "artifact"
     output_csv = tmp_path / "output.csv"
+    regular_csv = tmp_path / "regular.csv"
     pair_frame.to_csv(training_csv, index=False)
     input_frame = pair_frame[["question1", "question2"]].iloc[:3].copy()
-    input_frame.insert(0, "test_id", ["001", "002", "A03"])
+    input_frame.insert(0, identifier, ["001", "002", "A03"])
     input_frame.to_csv(input_csv, index=False)
     train_pipeline(
         data_path=training_csv,
@@ -215,8 +217,10 @@ def test_chunked_predictions_preserve_mixed_identifier_text(
         output_path=output_csv,
         chunk_size=1,
     )
-    assert pd.read_csv(output_csv, dtype={"test_id": "string"})["test_id"].tolist() == [
-        "001",
-        "002",
-        "A03",
-    ]
+    create_predictions(input_path=input_csv, artifact_dir=artifact_dir, output_path=regular_csv)
+    for path in (output_csv, regular_csv):
+        assert pd.read_csv(path, dtype={identifier: "string"})[identifier].tolist() == [
+            "001",
+            "002",
+            "A03",
+        ]
