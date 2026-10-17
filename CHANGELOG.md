@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Regular prediction output now replaces an existing CSV atomically
 - Training count settings now require positive integers
 - Removed a duplicate artifact checksum helper and restored CI formatting
 - Training configuration validates random seeds before splitting or fitting

@@ -205,7 +205,23 @@ def create_predictions(
 
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    output.to_csv(destination, index=False)
+    temporary_path: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            suffix=".csv",
+            prefix=".qqdup-",
+            dir=destination.parent,
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            output.to_csv(temporary, index=False)
+        os.replace(temporary_path, destination)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
     return output
 
 

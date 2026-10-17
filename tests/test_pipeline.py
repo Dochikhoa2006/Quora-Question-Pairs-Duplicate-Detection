@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import pytest
 
+from quora_duplicate_detection import pipeline as pipeline_module
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.lexical import LexicalModel
 from quora_duplicate_detection.pipeline import (
@@ -151,6 +152,32 @@ def test_chunked_predictions_preserve_existing_output_on_later_failure(
             output_path=output_csv,
             chunk_size=3,
         )
+    assert output_csv.read_text(encoding="utf-8") == "previous result\n"
+    assert not list(tmp_path.glob(".qqdup-*.csv"))
+
+
+def test_regular_predictions_preserve_existing_output_if_replace_fails(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    input_csv = tmp_path / "input.csv"
+    artifact_dir = tmp_path / "artifact"
+    output_csv = tmp_path / "output.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    pair_frame.iloc[:3].to_csv(input_csv, index=False)
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+    output_csv.write_text("previous result\n", encoding="utf-8")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(pipeline_module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replacement failure"):
+        create_predictions(input_path=input_csv, artifact_dir=artifact_dir, output_path=output_csv)
     assert output_csv.read_text(encoding="utf-8") == "previous result\n"
     assert not list(tmp_path.glob(".qqdup-*.csv"))
 
