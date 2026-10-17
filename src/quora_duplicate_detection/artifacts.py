@@ -217,20 +217,28 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
 
     arrays = _load_numeric_arrays(root / "model.npz")
 
-    vectorizer = manifest.get("vectorizer", {})
+    vectorizer = manifest.get("vectorizer")
+    if not isinstance(vectorizer, dict):
+        raise ValueError("invalid vectorizer metadata")
     ngram_range_raw = vectorizer.get("ngram_range")
     if (
         not isinstance(ngram_range_raw, list)
         or len(ngram_range_raw) != 2
-        or not all(isinstance(value, int) for value in ngram_range_raw)
+        or not all(type(value) is int and value > 0 for value in ngram_range_raw)
+        or ngram_range_raw[0] > ngram_range_raw[1]
     ):
         raise ValueError("invalid vectorizer ngram_range")
+    if any(
+        type(vectorizer.get(name)) is not int or vectorizer[name] < 1
+        for name in ("max_features", "min_df")
+    ):
+        raise ValueError("invalid vectorizer integer settings")
     extractor = PairFeatureExtractor.from_state(
         vocabulary=vocabulary,
         idf=arrays["tfidf_idf"],
         ngram_range=(ngram_range_raw[0], ngram_range_raw[1]),
-        max_features=int(vectorizer["max_features"]),
-        min_df=int(vectorizer["min_df"]),
+        max_features=vectorizer["max_features"],
+        min_df=vectorizer["min_df"],
     )
     lexical_intercept = arrays["lexical_intercept"]
     fusion_intercept = arrays["fusion_intercept"]

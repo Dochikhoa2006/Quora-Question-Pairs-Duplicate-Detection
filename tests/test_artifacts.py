@@ -161,3 +161,23 @@ def test_artifact_rejects_non_integer_vocabulary_index(saved_artifact, invalid_i
     _update_hash(saved_artifact, "vocabulary.json")
     with pytest.raises(ValueError, match="indices must be integers"):
         load_artifact(saved_artifact)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("max_features", 3.5, "integer settings"),
+        ("min_df", True, "integer settings"),
+        ("ngram_range", [True, 5], "ngram_range"),
+        ("ngram_range", [5, 3], "ngram_range"),
+    ],
+)
+def test_artifact_rejects_invalid_vectorizer_metadata(
+    saved_artifact, field, value, message
+) -> None:
+    manifest_path = saved_artifact / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["vectorizer"][field] = value
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_artifact(saved_artifact)
