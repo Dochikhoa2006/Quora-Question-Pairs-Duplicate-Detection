@@ -207,7 +207,11 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
         raise ValueError("invalid artifact vocabulary") from exc
     if not isinstance(vocabulary_raw, dict):
         raise ValueError("artifact vocabulary must be a JSON object")
-    vocabulary = {str(term): int(index) for term, index in vocabulary_raw.items()}
+    if any(
+        isinstance(index, bool) or not isinstance(index, int) for index in vocabulary_raw.values()
+    ):
+        raise ValueError("artifact vocabulary indices must be integers")
+    vocabulary = vocabulary_raw
     if sorted(vocabulary.values()) != list(range(len(vocabulary))):
         raise ValueError("artifact vocabulary indices must be contiguous")
 

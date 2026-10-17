@@ -149,3 +149,15 @@ def test_artifact_rejects_text_array_even_with_matching_hash(saved_artifact) -> 
     _update_hash(saved_artifact, "model.npz")
     with pytest.raises(ValueError, match="not numeric"):
         load_artifact(saved_artifact)
+
+
+@pytest.mark.parametrize("invalid_index", [0.5, True, "0"])
+def test_artifact_rejects_non_integer_vocabulary_index(saved_artifact, invalid_index) -> None:
+    vocabulary_path = saved_artifact / "vocabulary.json"
+    vocabulary = json.loads(vocabulary_path.read_text(encoding="utf-8"))
+    first_term = next(term for term, index in vocabulary.items() if index == 0)
+    vocabulary[first_term] = invalid_index
+    vocabulary_path.write_text(json.dumps(vocabulary), encoding="utf-8")
+    _update_hash(saved_artifact, "vocabulary.json")
+    with pytest.raises(ValueError, match="indices must be integers"):
+        load_artifact(saved_artifact)

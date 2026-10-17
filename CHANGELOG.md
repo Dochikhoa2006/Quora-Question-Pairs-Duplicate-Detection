@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Artifact loading now rejects non-integer vocabulary indices
 - Evaluation guidance now explains the optional training-overlap check
 - Repeated evaluation rejects seed ranges that would fail partway through a run
 - Regular predictions preserve text identifiers, including leading zeros
