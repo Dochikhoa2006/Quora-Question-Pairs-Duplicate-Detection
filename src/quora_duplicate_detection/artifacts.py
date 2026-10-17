@@ -263,12 +263,23 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
     lexical.validate()
     fusion.validate()
 
-    decision = manifest.get("decision", {})
+    decision = manifest.get("decision")
+    if not isinstance(decision, dict):
+        raise ValueError("artifact decision metadata is invalid")
     if decision.get("comparison") != "probability >= threshold":
         raise ValueError("artifact decision direction is unsupported")
-    threshold = float(decision["threshold"])
+    threshold = decision.get("threshold")
+    if type(threshold) not in (int, float):
+        raise ValueError("artifact threshold is invalid")
     if not 0 < threshold < 1:
         raise ValueError("artifact threshold is invalid")
+    threshold_metric = decision.get("selection_metric")
+    if not isinstance(threshold_metric, str) or threshold_metric not in {
+        "f1",
+        "accuracy",
+        "balanced_accuracy",
+    }:
+        raise ValueError("artifact threshold selection metric is invalid")
     semantic_reference = fusion_metadata.get("semantic_model_reference")
     if semantic_reference is not None and not isinstance(semantic_reference, str):
         raise ValueError("semantic model reference must be a string or null")
@@ -277,7 +288,7 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
         lexical=lexical,
         fusion=fusion,
         threshold=threshold,
-        threshold_metric=str(decision["selection_metric"]),
+        threshold_metric=threshold_metric,
         semantic_model_reference=semantic_reference,
         manifest=manifest,
     )

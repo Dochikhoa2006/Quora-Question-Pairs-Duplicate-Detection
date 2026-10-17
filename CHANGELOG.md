@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Artifact loading validates threshold and selection-metric metadata
 - Artifact loading validates vectorizer integer settings without coercion
 - Artifact loading now rejects non-integer vocabulary indices
 - Evaluation guidance now explains the optional training-overlap check

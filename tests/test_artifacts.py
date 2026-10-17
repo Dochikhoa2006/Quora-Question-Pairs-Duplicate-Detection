@@ -181,3 +181,20 @@ def test_artifact_rejects_invalid_vectorizer_metadata(
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match=message):
         load_artifact(saved_artifact)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("threshold", "0.5", "threshold is invalid"),
+        ("threshold", True, "threshold is invalid"),
+        ("selection_metric", "unknown", "selection metric is invalid"),
+    ],
+)
+def test_artifact_rejects_invalid_decision_metadata(saved_artifact, field, value, message) -> None:
+    manifest_path = saved_artifact / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["decision"][field] = value
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        load_artifact(saved_artifact)
