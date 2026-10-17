@@ -28,6 +28,10 @@ def test_config_round_trip_and_unknown_keys(tmp_path) -> None:
 @pytest.mark.parametrize(
     ("settings", "message"),
     [
+        ({"random_seed": -1}, "random_seed"),
+        ({"random_seed": 2**32}, "random_seed"),
+        ({"random_seed": True}, "random_seed"),
+        ({"random_seed": 1.5}, "random_seed"),
         ({"validation_size": 0}, "validation_size"),
         ({"test_size": 1}, "test_size"),
         ({"split_strategy": "unknown"}, "split_strategy"),

@@ -25,6 +25,12 @@ class TrainingConfig:
     semantic_batch_size: int = 64
 
     def __post_init__(self) -> None:
+        if (
+            isinstance(self.random_seed, bool)
+            or not isinstance(self.random_seed, int)
+            or not 0 <= self.random_seed < 2**32
+        ):
+            raise ValueError("random_seed must be an integer between 0 and 2**32 - 1")
         if self.split_strategy not in {"pair_stratified", "question_disjoint"}:
             raise ValueError("split_strategy must be pair_stratified or question_disjoint")
         if not 0 < self.validation_size < 1:
