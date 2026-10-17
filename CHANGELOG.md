@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Repeated evaluation rejects seed ranges that would fail partway through a run
 - Regular predictions preserve text identifiers, including leading zeros
 - Regular prediction output now replaces an existing CSV atomically
 - Training count settings now require positive integers

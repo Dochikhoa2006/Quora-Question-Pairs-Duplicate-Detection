@@ -96,6 +96,18 @@ def test_repeated_rejects_insufficient_runs_without_writing(tmp_path) -> None:
     assert not output_path.exists()
 
 
+def test_repeated_rejects_seed_overflow_before_loading_data(tmp_path) -> None:
+    output_path = tmp_path / "report.json"
+    with pytest.raises(ValueError, match="supported seed range"):
+        evaluate_repeated(
+            data_path=tmp_path / "missing.csv",
+            output_path=output_path,
+            config=TrainingConfig(random_seed=2**32 - 2),
+            repeats=3,
+        )
+    assert not output_path.exists()
+
+
 def test_repeated_split_failure_does_not_write_partial_report(tmp_path) -> None:
     input_path = tmp_path / "connected.csv"
     output_path = tmp_path / "report.json"

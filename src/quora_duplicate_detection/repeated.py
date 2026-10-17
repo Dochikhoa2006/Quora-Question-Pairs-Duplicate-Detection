@@ -85,6 +85,8 @@ def evaluate_repeated(
     """Fit independent grouped runs and report the empirical spread of test metrics."""
     if isinstance(repeats, bool) or not isinstance(repeats, int) or not 3 <= repeats <= 100:
         raise ValueError("repeats must be an integer between 3 and 100")
+    if config.random_seed + repeats > 2**32:
+        raise ValueError("random_seed and repeats exceed the supported seed range")
     if compare_lexical and semantic_model is None:
         raise ValueError("compare_lexical requires a semantic_model")
     data = load_pairs(data_path, labeled=True)
