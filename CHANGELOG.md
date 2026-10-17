@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Evaluation guidance now explains the optional training-overlap check
 - Repeated evaluation rejects seed ranges that would fail partway through a run
 - Regular predictions preserve text identifiers, including leading zeros
 - Regular prediction output now replaces an existing CSV atomically
