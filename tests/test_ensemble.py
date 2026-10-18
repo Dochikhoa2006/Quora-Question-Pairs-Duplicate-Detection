@@ -83,3 +83,16 @@ def test_fusion_requires_the_components_it_was_trained_with() -> None:
             lexical_scores=np.array([0.5]),
             semantic_scores=np.array([0.2]),
         )
+
+
+@pytest.mark.parametrize("invalid_score", [np.nan, np.inf])
+def test_fusion_rejects_nonfinite_prediction_scores(invalid_score: float) -> None:
+    fusion = ScoreFusion(
+        component_names=("lexical_probability", "semantic_cosine"),
+        coefficients=np.array([1.0, 1.0]),
+        intercept=0.0,
+    )
+    with pytest.raises(ValueError, match="non-finite"):
+        fusion.predict_proba(
+            lexical_scores=np.array([0.5]), semantic_scores=np.array([invalid_score])
+        )

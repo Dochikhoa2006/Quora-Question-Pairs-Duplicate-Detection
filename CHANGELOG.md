@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Prediction rejects non-finite component scores before writing probabilities
 - Threshold selection rejects invalid labels and probabilities before scoring
 - Training numeric settings reject booleans and strings with clear config errors
 - Artifact loading rejects non-finite or nonpositive TF-IDF weights

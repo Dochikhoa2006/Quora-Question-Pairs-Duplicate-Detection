@@ -68,6 +68,8 @@ class ScoreFusion:
         matrix = np.column_stack(components)
         if matrix.shape[1] != len(self.component_names):
             raise ValueError("component score shape does not match the fusion model")
+        if not np.isfinite(matrix).all():
+            raise ValueError("component scores contain non-finite values")
         return expit(matrix @ self.coefficients + self.intercept)
 
     def validate(self) -> None:
