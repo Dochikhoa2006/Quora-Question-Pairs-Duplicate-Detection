@@ -47,6 +47,23 @@ def test_score_and_metric_shape_validation() -> None:
         evaluate_probabilities(labels, np.array([0.1, 0.9]), threshold=1.0)
 
 
+@pytest.mark.parametrize("labels", [np.array([0, 2]), np.array([0.0, 1.5])])
+def test_threshold_selection_rejects_nonbinary_labels(labels: np.ndarray) -> None:
+    with pytest.raises(ValueError, match="binary label classes"):
+        select_threshold(labels, np.array([0.2, 0.8]), metric="f1")
+
+
+@pytest.mark.parametrize("scores", [np.array([0.2, np.nan]), np.array([0.2, 1.2])])
+def test_threshold_selection_rejects_invalid_probabilities(scores: np.ndarray) -> None:
+    with pytest.raises(ValueError, match="finite values between 0 and 1"):
+        select_threshold(np.array([0, 1]), scores, metric="f1")
+
+
+def test_threshold_selection_rejects_unknown_metric() -> None:
+    with pytest.raises(ValueError, match="unsupported threshold metric"):
+        select_threshold(np.array([0, 1]), np.array([0.2, 0.8]), metric="unknown")
+
+
 def test_fusion_requires_the_components_it_was_trained_with() -> None:
     fusion = ScoreFusion(
         component_names=("lexical_probability", "semantic_cosine"),

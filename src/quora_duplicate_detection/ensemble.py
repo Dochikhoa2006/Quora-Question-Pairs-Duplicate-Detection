@@ -88,16 +88,22 @@ def select_threshold(
     *,
     metric: ThresholdMetric,
 ) -> tuple[float, float]:
-    labels = np.asarray(labels, dtype=np.int8)
+    labels = np.asarray(labels)
     probabilities = np.asarray(probabilities, dtype=np.float64)
-    if labels.shape != probabilities.shape:
-        raise ValueError("labels and probabilities must have the same shape")
+    if labels.ndim != 1 or probabilities.ndim != 1 or labels.shape != probabilities.shape:
+        raise ValueError("labels and probabilities must be one-dimensional with the same shape")
+    if not np.isin(labels, [0, 1]).all() or len(np.unique(labels)) != 2:
+        raise ValueError("threshold selection requires both binary label classes")
+    if not np.isfinite(probabilities).all() or ((probabilities < 0) | (probabilities > 1)).any():
+        raise ValueError("probabilities must be finite values between 0 and 1")
 
     metric_functions = {
         "f1": lambda observed, predicted: f1_score(observed, predicted, zero_division=0),
         "accuracy": accuracy_score,
         "balanced_accuracy": balanced_accuracy_score,
     }
+    if metric not in metric_functions:
+        raise ValueError("unsupported threshold metric")
     scorer = metric_functions[metric]
     best_threshold = 0.5
     best_score = -1.0
