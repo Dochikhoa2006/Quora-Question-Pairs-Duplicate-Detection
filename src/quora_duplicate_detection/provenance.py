@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from quora_duplicate_detection.output import write_json_atomic
 from quora_duplicate_detection.semantic import verify_semantic_artifact
 
 SIGNED_FILES = ("run_config.json", "training_summary.json")
@@ -66,7 +67,7 @@ def sign_semantic_artifact(output_dir: str | Path, private_key_path: str | Path)
         **payload,
         "signature_base64": base64.b64encode(key.sign(_signed_bytes(payload))).decode("ascii"),
     }
-    destination.write_text(json.dumps(signed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_atomic(destination, signed)
     return {
         "signed": True,
         "public_key_sha256": payload["public_key_sha256"],

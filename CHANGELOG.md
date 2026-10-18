@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Semantic provenance writes atomically so a failed write can be retried
 - Report commands share one atomic JSON writer
 - Repeated evaluation reports now replace existing JSON atomically
 - Standalone evaluation reports now replace existing JSON atomically

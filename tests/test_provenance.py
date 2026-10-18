@@ -6,7 +6,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from quora_duplicate_detection import cli
+from quora_duplicate_detection import cli, output
 from quora_duplicate_detection.provenance import (
     sign_semantic_artifact,
     verify_signed_semantic_artifact,
@@ -97,3 +97,19 @@ def test_private_key_cannot_be_stored_inside_artifact(signed_run) -> None:
     internal_key.write_bytes(private_path.read_bytes())
     with pytest.raises(ValueError, match="outside"):
         sign_semantic_artifact(artifact, internal_key)
+
+
+def test_failed_provenance_write_can_be_retried(signed_run, monkeypatch) -> None:
+    artifact, private_path, public_path = signed_run
+
+    def fail_replace(source, destination):
+        raise OSError("simulated replacement failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(output.os, "replace", fail_replace)
+        with pytest.raises(OSError, match="simulated replacement failure"):
+            sign_semantic_artifact(artifact, private_path)
+    assert not (artifact / "semantic_provenance.json").exists()
+    assert not list(artifact.glob(".qqdup-*.json"))
+    sign_semantic_artifact(artifact, private_path)
+    assert verify_signed_semantic_artifact(artifact, public_path)["signature_verified"]
