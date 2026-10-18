@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Repeated evaluation reports now replace existing JSON atomically
 - Standalone evaluation reports now replace existing JSON atomically
 - Prediction rejects non-finite component scores before writing probabilities
 - Threshold selection rejects invalid labels and probabilities before scoring

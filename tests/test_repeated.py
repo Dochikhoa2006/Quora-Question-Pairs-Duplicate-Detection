@@ -84,6 +84,29 @@ def test_repeated_cli_writes_report(tmp_path, pair_frame: pd.DataFrame, capsys) 
     assert printed["protocol"] == "repeated_question_disjoint_holdout"
 
 
+def test_repeated_preserves_existing_report_if_replace_fails(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    input_path = tmp_path / "pairs.csv"
+    output_path = tmp_path / "report.json"
+    pair_frame.to_csv(input_path, index=False)
+    output_path.write_text('{"previous": true}\n', encoding="utf-8")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(repeated.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replacement failure"):
+        evaluate_repeated(
+            data_path=input_path,
+            output_path=output_path,
+            config=TrainingConfig(tfidf_min_df=1),
+            repeats=3,
+        )
+    assert output_path.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert not list(tmp_path.glob(".qqdup-*.json"))
+
+
 def test_repeated_rejects_insufficient_runs_without_writing(tmp_path) -> None:
     output_path = tmp_path / "report.json"
     with pytest.raises(ValueError, match="between 3 and 100"):
