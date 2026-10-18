@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -28,6 +27,7 @@ from quora_duplicate_detection.data import (
 from quora_duplicate_detection.ensemble import ScoreFusion, select_threshold
 from quora_duplicate_detection.lexical import LexicalModel
 from quora_duplicate_detection.metrics import evaluate_probabilities
+from quora_duplicate_detection.output import write_json_atomic
 from quora_duplicate_detection.semantic import SemanticScorer
 from quora_duplicate_detection.slices import analyze_slices
 
@@ -346,23 +346,5 @@ def evaluate_labeled_file(
     )
     report["note"] = "Metrics are valid only because this file contains observed labels."
     if output_path is not None:
-        destination = Path(output_path)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary_path: Path | None = None
-        try:
-            with NamedTemporaryFile(
-                mode="w",
-                encoding="utf-8",
-                suffix=".json",
-                prefix=".qqdup-",
-                dir=destination.parent,
-                delete=False,
-            ) as temporary:
-                temporary_path = Path(temporary.name)
-                json.dump(report, temporary, indent=2, sort_keys=True)
-                temporary.write("\n")
-            os.replace(temporary_path, destination)
-        finally:
-            if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+        write_json_atomic(output_path, report)
     return report

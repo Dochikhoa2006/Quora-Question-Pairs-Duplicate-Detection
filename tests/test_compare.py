@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from quora_duplicate_detection import cli, pipeline
-from quora_duplicate_detection import compare as comparison_module
+from quora_duplicate_detection import output as output_module
 from quora_duplicate_detection.compare import compare_artifacts
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.pipeline import train_pipeline
@@ -151,7 +151,7 @@ def test_compare_keeps_existing_report_if_replace_fails(
     def fail_replace(source, destination):
         raise OSError("simulated replacement failure")
 
-    monkeypatch.setattr(comparison_module.os, "replace", fail_replace)
+    monkeypatch.setattr(output_module.os, "replace", fail_replace)
     with pytest.raises(OSError, match="simulated replacement failure"):
         compare_artifacts(
             data_path=external_path,

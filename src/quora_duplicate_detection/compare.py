@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import os
 import re
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any
 
 import numpy as np
@@ -21,6 +18,7 @@ from quora_duplicate_detection.data import (
     load_pairs,
 )
 from quora_duplicate_detection.metrics import evaluate_probabilities
+from quora_duplicate_detection.output import write_json_atomic
 from quora_duplicate_detection.pipeline import predict_probabilities
 from quora_duplicate_detection.repeated import METRIC_NAMES
 
@@ -188,23 +186,5 @@ def compare_artifacts(
         "models": model_reports,
         "comparisons": comparisons,
     }
-    destination = Path(output_path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path: Path | None = None
-    try:
-        with NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix=".json",
-            prefix=".qqdup-",
-            dir=destination.parent,
-            delete=False,
-        ) as temporary:
-            temporary_path = Path(temporary.name)
-            json.dump(report, temporary, indent=2, sort_keys=True)
-            temporary.write("\n")
-        os.replace(temporary_path, destination)
-    finally:
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
+    write_json_atomic(output_path, report)
     return report

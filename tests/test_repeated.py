@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quora_duplicate_detection import cli, pipeline, repeated
+from quora_duplicate_detection import cli, output, pipeline, repeated
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.repeated import _test_overlap_summary, evaluate_repeated
 
@@ -95,7 +95,7 @@ def test_repeated_preserves_existing_report_if_replace_fails(
     def fail_replace(source, destination):
         raise OSError("simulated replacement failure")
 
-    monkeypatch.setattr(repeated.os, "replace", fail_replace)
+    monkeypatch.setattr(output.os, "replace", fail_replace)
     with pytest.raises(OSError, match="simulated replacement failure"):
         evaluate_repeated(
             data_path=input_path,

@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Report commands share one atomic JSON writer
 - Repeated evaluation reports now replace existing JSON atomically
 - Standalone evaluation reports now replace existing JSON atomically
 - Prediction rejects non-finite component scores before writing probabilities

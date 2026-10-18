@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import replace
 from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory
 from typing import Any
 
 import numpy as np
@@ -14,6 +13,7 @@ import pandas as pd
 
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import dataset_fingerprint, load_pairs
+from quora_duplicate_detection.output import write_json_atomic
 from quora_duplicate_detection.pipeline import train_pipeline
 
 METRICS = (
@@ -166,23 +166,5 @@ def evaluate_repeated(
             ),
             "summary": _metric_summary(runs, "hybrid_minus_lexical"),
         }
-    destination = Path(output_path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path: Path | None = None
-    try:
-        with NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix=".json",
-            prefix=".qqdup-",
-            dir=destination.parent,
-            delete=False,
-        ) as temporary:
-            temporary_path = Path(temporary.name)
-            json.dump(report, temporary, indent=2, sort_keys=True)
-            temporary.write("\n")
-        os.replace(temporary_path, destination)
-    finally:
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
+    write_json_atomic(output_path, report)
     return report
