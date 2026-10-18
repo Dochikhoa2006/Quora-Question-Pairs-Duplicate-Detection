@@ -23,7 +23,7 @@ def write_json_atomic(path: str | Path, payload: dict[str, Any]) -> None:
             delete=False,
         ) as temporary:
             temporary_path = Path(temporary.name)
-            json.dump(payload, temporary, indent=2, sort_keys=True)
+            json.dump(payload, temporary, indent=2, sort_keys=True, allow_nan=False)
             temporary.write("\n")
         os.replace(temporary_path, destination)
     finally:
