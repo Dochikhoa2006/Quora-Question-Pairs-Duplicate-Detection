@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Standalone evaluation reports now replace existing JSON atomically
 - Prediction rejects non-finite component scores before writing probabilities
 - Threshold selection rejects invalid labels and probabilities before scoring
 - Training numeric settings reject booleans and strings with clear config errors

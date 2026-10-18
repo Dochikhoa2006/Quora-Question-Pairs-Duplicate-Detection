@@ -11,6 +11,7 @@ from quora_duplicate_detection.lexical import LexicalModel
 from quora_duplicate_detection.pipeline import (
     create_predictions,
     create_predictions_chunked,
+    evaluate_labeled_file,
     train_pipeline,
 )
 
@@ -180,6 +181,32 @@ def test_regular_predictions_preserve_existing_output_if_replace_fails(
         create_predictions(input_path=input_csv, artifact_dir=artifact_dir, output_path=output_csv)
     assert output_csv.read_text(encoding="utf-8") == "previous result\n"
     assert not list(tmp_path.glob(".qqdup-*.csv"))
+
+
+def test_evaluation_preserves_existing_report_if_replace_fails(
+    tmp_path, pair_frame: pd.DataFrame, monkeypatch
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    artifact_dir = tmp_path / "artifact"
+    output_json = tmp_path / "evaluation.json"
+    pair_frame.to_csv(training_csv, index=False)
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+    output_json.write_text('{"previous": true}\n', encoding="utf-8")
+
+    def fail_replace(source, destination):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(pipeline_module.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replacement failure"):
+        evaluate_labeled_file(
+            data_path=training_csv, artifact_dir=artifact_dir, output_path=output_json
+        )
+    assert output_json.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert not list(tmp_path.glob(".qqdup-*.json"))
 
 
 def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
