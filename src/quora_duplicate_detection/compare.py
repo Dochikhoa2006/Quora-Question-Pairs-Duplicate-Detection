@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -103,11 +104,14 @@ def compare_artifacts(
     for label, directory in models.items():
         artifact = load_artifact(directory)
         manifest_hash = hashlib.sha256((Path(directory) / "manifest.json").read_bytes()).hexdigest()
-        if manifest_hash in seen_manifests:
+        content_hash = hashlib.sha256(
+            json.dumps(artifact.manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        if content_hash in seen_manifests:
             raise ValueError(
-                f"models {seen_manifests[manifest_hash]} and {label} use the same artifact manifest"
+                f"models {seen_manifests[content_hash]} and {label} use the same artifact manifest"
             )
-        seen_manifests[manifest_hash] = label
+        seen_manifests[content_hash] = label
         training = artifact.manifest.get("training", {})
         if training.get("dataset_fingerprint_sha256") == fingerprint:
             raise ValueError(f"evaluation data matches training data for model: {label}")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -135,6 +136,27 @@ def test_compare_rejects_duplicate_artifacts(comparison_inputs, tmp_path) -> Non
             data_path=external_path,
             output_path=output,
             models={"first": lexical_dir, "second": lexical_dir},
+            baseline="first",
+            bootstrap_samples=100,
+        )
+    assert not output.exists()
+
+
+def test_compare_rejects_reformatted_copy_of_artifact(comparison_inputs, tmp_path) -> None:
+    _, external_path, lexical_dir, _ = comparison_inputs
+    copy_dir = tmp_path / "lexical_copy"
+    shutil.copytree(lexical_dir, copy_dir)
+    manifest_path = copy_dir / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(json.loads(manifest_path.read_text(encoding="utf-8")), separators=(",", ":")),
+        encoding="utf-8",
+    )
+    output = tmp_path / "duplicate.json"
+    with pytest.raises(ValueError, match="same artifact manifest"):
+        compare_artifacts(
+            data_path=external_path,
+            output_path=output,
+            models={"first": lexical_dir, "second": copy_dir},
             baseline="first",
             bootstrap_samples=100,
         )
