@@ -9,7 +9,7 @@ import pytest
 
 from quora_duplicate_detection import cli, pipeline
 from quora_duplicate_detection import output as output_module
-from quora_duplicate_detection.compare import compare_artifacts
+from quora_duplicate_detection.compare import _overlap_counts, compare_artifacts
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.pipeline import train_pipeline
 
@@ -72,6 +72,20 @@ def test_compare_artifacts_is_paired_reproducible_and_aggregate(
     assert "question1" not in json.dumps(first)
     first_question = pd.read_csv(external_path).loc[0, "question1"]
     assert first_question not in json.dumps(first)
+
+
+def test_overlap_check_ignores_blank_questions_but_counts_exact_blank_pairs() -> None:
+    training = pd.DataFrame({"question1": ["", ""], "question2": ["training", ""]})
+    unrelated = pd.DataFrame({"question1": [""], "question2": ["external"]})
+    exact = pd.DataFrame({"question1": [""], "question2": [""]})
+    assert _overlap_counts(unrelated, training) == {
+        "shared_pair_rows": 0,
+        "shared_question_rows": 0,
+    }
+    assert _overlap_counts(exact, training) == {
+        "shared_pair_rows": 1,
+        "shared_question_rows": 0,
+    }
 
 
 def test_compare_rejects_exact_training_data_and_does_not_write(

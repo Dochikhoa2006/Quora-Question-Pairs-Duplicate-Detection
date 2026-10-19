@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- External overlap checks ignore shared blank questions but still reject exact blank pairs
 - Duplicate-artifact detection ignores JSON formatting differences in manifests
 - Evaluation reports cannot overwrite saved detector artifact files
 - Split audit reports write atomically and cannot overwrite source data

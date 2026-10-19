@@ -46,7 +46,7 @@ def _overlap_counts(external: Any, training: Any) -> dict[str, int]:
         tuple(sorted(pair))
         for pair in training[list(PAIR_COLUMNS)].itertuples(index=False, name=None)
     }
-    training_questions = set(training[PAIR_COLUMNS[0]]) | set(training[PAIR_COLUMNS[1]])
+    training_questions = (set(training[PAIR_COLUMNS[0]]) | set(training[PAIR_COLUMNS[1]])) - {""}
     pairs = external[list(PAIR_COLUMNS)].itertuples(index=False, name=None)
     pair_rows = 0
     question_rows = 0
@@ -121,7 +121,7 @@ def compare_artifacts(
             if dataset_fingerprint(original) != training["dataset_fingerprint_sha256"]:
                 raise ValueError(f"training data fingerprint does not match model: {label}")
             overlap = _overlap_counts(frame, original)
-            if overlap["shared_question_rows"]:
+            if overlap["shared_question_rows"] or overlap["shared_pair_rows"]:
                 raise ValueError(
                     f"external data shares {overlap['shared_pair_rows']} pair rows and "
                     f"{overlap['shared_question_rows']} question rows with model: {label}"

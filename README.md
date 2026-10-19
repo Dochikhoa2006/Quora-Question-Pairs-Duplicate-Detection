@@ -202,9 +202,10 @@ Use `--semantic-model cosent=path/to/model` if a saved semantic reference needs
 an explicit local override.
 When original labeled training files are available, pass one `--training-data`
 entry per model. Their fingerprints must match the saved manifests. The command
-then rejects external rows sharing either normalized question with that model's
-training data, including reversed pairs. Omit this option only when the original
-data is unavailable; the report records `null` for unchecked models.
+then rejects external rows sharing a nonempty normalized question or an exact
+pair with that model's training data, including reversed pairs. Omit this option
+only when the original data is unavailable; the report records `null` for
+unchecked models.
 
 ### Optional semantic fine-tuning
 

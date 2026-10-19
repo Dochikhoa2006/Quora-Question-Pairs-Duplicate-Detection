@@ -180,10 +180,11 @@ Each artifact supplies its already selected threshold; all models score the
 same rows. The command rejects a file whose complete dataset fingerprint
 matches any artifact's training data, and rejects duplicate artifact manifests
 under different labels. With a matching `--training-data` file for each model,
-it also rejects external rows sharing a normalized question with that model's
-training data, including reversed pairs. The report records `null` for models
-without an overlap check. Protect the external set independently and do not
-use it to tune or choose a winner before making a final claim.
+it also rejects external rows sharing a nonempty normalized question or an exact
+pair with that model's training data, including reversed pairs. The report records
+`null` for models without an overlap check. Protect the external set
+independently and do not use it to tune or choose a winner before making a
+final claim.
 
 The report contains artifact manifest hashes, aggregate metrics, candidate
 minus baseline differences, and 2.5/97.5 percentiles from a stratified paired
