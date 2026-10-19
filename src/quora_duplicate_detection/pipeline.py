@@ -187,6 +187,7 @@ def create_predictions(
     semantic_batch_size: int = 64,
     include_binary_prediction: bool = False,
 ) -> pd.DataFrame:
+    _validate_prediction_paths(input_path, output_path)
     frame = load_pairs(input_path, labeled=False)
     artifact = load_artifact(artifact_dir)
     probabilities = predict_probabilities(
@@ -225,6 +226,11 @@ def create_predictions(
     return output
 
 
+def _validate_prediction_paths(input_path: str | Path, output_path: str | Path) -> None:
+    if Path(input_path).resolve() == Path(output_path).resolve():
+        raise ValueError("prediction input and output must be different files")
+
+
 def _prediction_frame(
     frame: pd.DataFrame,
     probabilities: np.ndarray,
@@ -260,6 +266,7 @@ def create_predictions_chunked(
     """Stream an unlabeled CSV to an atomic output while loading models once."""
     if isinstance(chunk_size, bool) or not isinstance(chunk_size, int) or chunk_size < 1:
         raise ValueError("chunk_size must be a positive integer")
+    _validate_prediction_paths(input_path, output_path)
     artifact = load_artifact(artifact_dir)
     requires_semantic = "semantic_cosine" in artifact.fusion.component_names
     reference = semantic_model or artifact.semantic_model_reference

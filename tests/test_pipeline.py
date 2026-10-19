@@ -219,6 +219,24 @@ def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
         )
 
 
+@pytest.mark.parametrize("chunked", [False, True])
+def test_predictions_reject_overwriting_input(tmp_path, chunked: bool) -> None:
+    input_csv = tmp_path / "input.csv"
+    input_csv.write_text("question1,question2\na,b\n", encoding="utf-8")
+    original = input_csv.read_bytes()
+    options = {
+        "input_path": input_csv,
+        "artifact_dir": tmp_path / "missing_artifact",
+        "output_path": input_csv,
+    }
+    with pytest.raises(ValueError, match="different files"):
+        if chunked:
+            create_predictions_chunked(**options, chunk_size=1)
+        else:
+            create_predictions(**options)
+    assert input_csv.read_bytes() == original
+
+
 @pytest.mark.parametrize("identifier", ["id", "test_id"])
 def test_predictions_preserve_mixed_identifier_text(
     tmp_path, pair_frame: pd.DataFrame, identifier: str
