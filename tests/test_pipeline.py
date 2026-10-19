@@ -222,6 +222,20 @@ def test_evaluation_rejects_overwriting_input(tmp_path) -> None:
     assert input_csv.read_bytes() == original
 
 
+def test_evaluation_rejects_overwriting_artifact_manifest(tmp_path) -> None:
+    artifact_dir = tmp_path / "artifact"
+    artifact_dir.mkdir()
+    manifest = artifact_dir / "manifest.json"
+    manifest.write_text('{"saved": true}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="artifact files"):
+        evaluate_labeled_file(
+            data_path=tmp_path / "missing.csv",
+            artifact_dir=artifact_dir,
+            output_path=manifest,
+        )
+    assert manifest.read_text(encoding="utf-8") == '{"saved": true}\n'
+
+
 def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
     with pytest.raises(ValueError, match="chunk_size"):
         create_predictions_chunked(

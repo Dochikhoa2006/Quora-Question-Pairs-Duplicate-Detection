@@ -239,3 +239,19 @@ def test_compare_rejects_overwriting_source_data(tmp_path, overwrite_training: b
             bootstrap_samples=100,
         )
     assert target.read_text(encoding="utf-8") == content
+
+
+def test_compare_rejects_overwriting_artifact_manifest(tmp_path) -> None:
+    artifact_dir = tmp_path / "artifact"
+    artifact_dir.mkdir()
+    manifest = artifact_dir / "manifest.json"
+    manifest.write_text('{"saved": true}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="artifact files"):
+        compare_artifacts(
+            data_path=tmp_path / "missing.csv",
+            output_path=manifest,
+            models={"a": artifact_dir, "b": tmp_path / "other"},
+            baseline="a",
+            bootstrap_samples=100,
+        )
+    assert manifest.read_text(encoding="utf-8") == '{"saved": true}\n'

@@ -18,7 +18,11 @@ from quora_duplicate_detection.data import (
     load_pairs,
 )
 from quora_duplicate_detection.metrics import evaluate_probabilities
-from quora_duplicate_detection.output import require_distinct_paths, write_json_atomic
+from quora_duplicate_detection.output import (
+    require_distinct_paths,
+    require_output_outside_artifact_files,
+    write_json_atomic,
+)
 from quora_duplicate_detection.pipeline import predict_probabilities
 from quora_duplicate_detection.repeated import METRIC_NAMES
 
@@ -84,6 +88,8 @@ def compare_artifacts(
     require_distinct_paths(data_path, output_path)
     for source in source_data.values():
         require_distinct_paths(source, output_path)
+    for directory in models.values():
+        require_output_outside_artifact_files(output_path, directory)
 
     frame = load_pairs(data_path, labeled=True)
     labels = frame[LABEL_COLUMN].to_numpy(dtype=np.int8)

@@ -192,6 +192,15 @@ def test_audit_rejects_overwriting_source_data(grouped_artifact) -> None:
     assert data_path.read_bytes() == original
 
 
+def test_audit_rejects_overwriting_artifact_manifest(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    manifest = artifact_dir / "manifest.json"
+    original = manifest.read_bytes()
+    with pytest.raises(ValueError, match="artifact files"):
+        audit_split(data_path=data_path, artifact_dir=artifact_dir, output_path=manifest)
+    assert manifest.read_bytes() == original
+
+
 def test_audit_preserves_existing_report_if_replace_fails(
     grouped_artifact, tmp_path, monkeypatch
 ) -> None:

@@ -27,7 +27,11 @@ from quora_duplicate_detection.data import (
 from quora_duplicate_detection.ensemble import ScoreFusion, select_threshold
 from quora_duplicate_detection.lexical import LexicalModel
 from quora_duplicate_detection.metrics import evaluate_probabilities
-from quora_duplicate_detection.output import require_distinct_paths, write_json_atomic
+from quora_duplicate_detection.output import (
+    require_distinct_paths,
+    require_output_outside_artifact_files,
+    write_json_atomic,
+)
 from quora_duplicate_detection.semantic import SemanticScorer
 from quora_duplicate_detection.slices import analyze_slices
 
@@ -331,6 +335,7 @@ def evaluate_labeled_file(
 ) -> dict[str, Any]:
     if output_path is not None:
         require_distinct_paths(data_path, output_path)
+        require_output_outside_artifact_files(output_path, artifact_dir)
     frame = load_pairs(data_path, labeled=True)
     artifact = load_artifact(artifact_dir)
     probabilities = predict_probabilities(
