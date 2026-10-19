@@ -13,7 +13,7 @@ import pandas as pd
 
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.data import dataset_fingerprint, load_pairs
-from quora_duplicate_detection.output import write_json_atomic
+from quora_duplicate_detection.output import require_distinct_paths, write_json_atomic
 from quora_duplicate_detection.pipeline import train_pipeline
 
 METRICS = (
@@ -90,6 +90,7 @@ def evaluate_repeated(
         raise ValueError("random_seed and repeats exceed the supported seed range")
     if compare_lexical and semantic_model is None:
         raise ValueError("compare_lexical requires a semantic_model")
+    require_distinct_paths(data_path, output_path)
     data = load_pairs(data_path, labeled=True)
     grouped_config = replace(config, split_strategy="question_disjoint")
     runs: list[dict[str, Any]] = []

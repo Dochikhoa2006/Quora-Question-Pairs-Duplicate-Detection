@@ -18,7 +18,7 @@ from quora_duplicate_detection.data import (
     load_pairs,
 )
 from quora_duplicate_detection.metrics import evaluate_probabilities
-from quora_duplicate_detection.output import write_json_atomic
+from quora_duplicate_detection.output import require_distinct_paths, write_json_atomic
 from quora_duplicate_detection.pipeline import predict_probabilities
 from quora_duplicate_detection.repeated import METRIC_NAMES
 
@@ -81,6 +81,9 @@ def compare_artifacts(
         raise ValueError("bootstrap_samples must be an integer between 100 and 2000")
     if isinstance(random_seed, bool) or not isinstance(random_seed, int) or random_seed < 0:
         raise ValueError("random_seed must be a nonnegative integer")
+    require_distinct_paths(data_path, output_path)
+    for source in source_data.values():
+        require_distinct_paths(source, output_path)
 
     frame = load_pairs(data_path, labeled=True)
     labels = frame[LABEL_COLUMN].to_numpy(dtype=np.int8)

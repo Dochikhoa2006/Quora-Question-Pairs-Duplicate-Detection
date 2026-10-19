@@ -131,6 +131,20 @@ def test_repeated_rejects_seed_overflow_before_loading_data(tmp_path) -> None:
     assert not output_path.exists()
 
 
+def test_repeated_rejects_overwriting_input(tmp_path) -> None:
+    input_csv = tmp_path / "labeled.csv"
+    input_csv.write_text("question1,question2,is_duplicate\na,b,0\n", encoding="utf-8")
+    original = input_csv.read_bytes()
+    with pytest.raises(ValueError, match="different files"):
+        evaluate_repeated(
+            data_path=input_csv,
+            output_path=input_csv,
+            config=TrainingConfig(),
+            repeats=3,
+        )
+    assert input_csv.read_bytes() == original
+
+
 def test_repeated_split_failure_does_not_write_partial_report(tmp_path) -> None:
     input_path = tmp_path / "connected.csv"
     output_path = tmp_path / "report.json"

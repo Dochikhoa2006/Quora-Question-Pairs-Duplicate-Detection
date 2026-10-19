@@ -209,6 +209,19 @@ def test_evaluation_preserves_existing_report_if_replace_fails(
     assert not list(tmp_path.glob(".qqdup-*.json"))
 
 
+def test_evaluation_rejects_overwriting_input(tmp_path) -> None:
+    input_csv = tmp_path / "labeled.csv"
+    input_csv.write_text("question1,question2,is_duplicate\na,b,0\n", encoding="utf-8")
+    original = input_csv.read_bytes()
+    with pytest.raises(ValueError, match="different files"):
+        evaluate_labeled_file(
+            data_path=input_csv,
+            artifact_dir=tmp_path / "missing_artifact",
+            output_path=input_csv,
+        )
+    assert input_csv.read_bytes() == original
+
+
 def test_chunked_predictions_reject_invalid_chunk_size(tmp_path) -> None:
     with pytest.raises(ValueError, match="chunk_size"):
         create_predictions_chunked(

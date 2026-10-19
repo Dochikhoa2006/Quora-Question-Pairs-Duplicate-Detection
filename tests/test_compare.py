@@ -219,3 +219,23 @@ def test_compare_validation_rejects_invalid_setup_before_reading_data(tmp_path) 
         )
     with pytest.raises(ValueError, match="unique LABEL=PATH"):
         cli._labeled_paths(["a=one", "a=two"], option="--model")
+
+
+@pytest.mark.parametrize("overwrite_training", [False, True])
+def test_compare_rejects_overwriting_source_data(tmp_path, overwrite_training: bool) -> None:
+    external = tmp_path / "external.csv"
+    training = tmp_path / "training.csv"
+    content = "question1,question2,is_duplicate\na,b,0\n"
+    external.write_text(content, encoding="utf-8")
+    training.write_text(content, encoding="utf-8")
+    target = training if overwrite_training else external
+    with pytest.raises(ValueError, match="different files"):
+        compare_artifacts(
+            data_path=external,
+            output_path=target,
+            models={"a": tmp_path / "a", "b": tmp_path / "b"},
+            baseline="a",
+            training_data={"a": training},
+            bootstrap_samples=100,
+        )
+    assert target.read_text(encoding="utf-8") == content

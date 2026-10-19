@@ -9,6 +9,11 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 
 
+def require_distinct_paths(source: str | Path, destination: str | Path) -> None:
+    if Path(source).resolve() == Path(destination).resolve():
+        raise ValueError("input and output must be different files")
+
+
 def write_json_atomic(path: str | Path, payload: dict[str, Any]) -> None:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
