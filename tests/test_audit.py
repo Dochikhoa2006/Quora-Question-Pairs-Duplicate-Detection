@@ -6,7 +6,7 @@ import json
 import pandas as pd
 import pytest
 
-from quora_duplicate_detection import cli
+from quora_duplicate_detection import cli, output
 from quora_duplicate_detection.audit import audit_split
 from quora_duplicate_detection.config import TrainingConfig
 from quora_duplicate_detection.pipeline import train_pipeline
@@ -182,3 +182,28 @@ def test_audit_cli_exits_nonzero_on_failed_check(grouped_artifact, capsys, monke
     with pytest.raises(SystemExit) as exc:
         cli.main(["audit-split", "--data", str(data_path), "--artifact", str(artifact_dir)])
     assert exc.value.code == 1
+
+
+def test_audit_rejects_overwriting_source_data(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    original = data_path.read_bytes()
+    with pytest.raises(ValueError, match="different files"):
+        audit_split(data_path=data_path, artifact_dir=artifact_dir, output_path=data_path)
+    assert data_path.read_bytes() == original
+
+
+def test_audit_preserves_existing_report_if_replace_fails(
+    grouped_artifact, tmp_path, monkeypatch
+) -> None:
+    data_path, artifact_dir = grouped_artifact
+    destination = tmp_path / "audit.json"
+    destination.write_text('{"previous": true}\n', encoding="utf-8")
+
+    def fail_replace(source, target):
+        raise OSError("simulated replacement failure")
+
+    monkeypatch.setattr(output.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replacement failure"):
+        audit_split(data_path=data_path, artifact_dir=artifact_dir, output_path=destination)
+    assert destination.read_text(encoding="utf-8") == '{"previous": true}\n'
+    assert not list(tmp_path.glob(".qqdup-*.json"))

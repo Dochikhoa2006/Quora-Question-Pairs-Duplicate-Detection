@@ -23,6 +23,7 @@ from quora_duplicate_detection.data import (
 )
 from quora_duplicate_detection.ensemble import select_threshold
 from quora_duplicate_detection.metrics import evaluate_probabilities
+from quora_duplicate_detection.output import require_distinct_paths, write_json_atomic
 from quora_duplicate_detection.pipeline import predict_probabilities
 from quora_duplicate_detection.slices import analyze_slices
 
@@ -177,6 +178,8 @@ def audit_split(
     semantic_model: str | None = None,
 ) -> dict[str, Any]:
     """Replay saved assignments and evaluation without exposing row data."""
+    if output_path is not None:
+        require_distinct_paths(data_path, output_path)
     artifact = load_artifact(artifact_dir)
     frame = load_pairs(data_path, labeled=True)
     fingerprint = dataset_fingerprint(frame)
@@ -235,9 +238,5 @@ def audit_split(
         "questions_crossing_splits": overlap,
     }
     if output_path is not None:
-        destination = Path(output_path)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(
-            json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        write_json_atomic(output_path, report)
     return report

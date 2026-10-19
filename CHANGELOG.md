@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Split audit reports write atomically and cannot overwrite source data
 - Evaluation report paths cannot overwrite input or supplied training CSVs
 - Prediction rejects using the input CSV as its output path
 - JSON reports reject non-finite values instead of writing invalid JSON
