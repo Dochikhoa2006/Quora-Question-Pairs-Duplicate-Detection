@@ -192,6 +192,7 @@ def create_predictions(
     include_binary_prediction: bool = False,
 ) -> pd.DataFrame:
     require_distinct_paths(input_path, output_path)
+    require_output_outside_artifact_files(output_path, artifact_dir)
     frame = load_pairs(input_path, labeled=False)
     artifact = load_artifact(artifact_dir)
     probabilities = predict_probabilities(
@@ -266,6 +267,7 @@ def create_predictions_chunked(
     if isinstance(chunk_size, bool) or not isinstance(chunk_size, int) or chunk_size < 1:
         raise ValueError("chunk_size must be a positive integer")
     require_distinct_paths(input_path, output_path)
+    require_output_outside_artifact_files(output_path, artifact_dir)
     artifact = load_artifact(artifact_dir)
     requires_semantic = "semantic_cosine" in artifact.fusion.component_names
     reference = semantic_model or artifact.semantic_model_reference

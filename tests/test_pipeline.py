@@ -264,6 +264,26 @@ def test_predictions_reject_overwriting_input(tmp_path, chunked: bool) -> None:
     assert input_csv.read_bytes() == original
 
 
+@pytest.mark.parametrize("chunked", [False, True])
+@pytest.mark.parametrize("name", ["manifest.json", "split_assignments.csv"])
+def test_predictions_reject_overwriting_artifact_files(tmp_path, chunked: bool, name: str) -> None:
+    artifact_dir = tmp_path / "artifact"
+    artifact_dir.mkdir()
+    destination = artifact_dir / name
+    destination.write_text("saved artifact\n", encoding="utf-8")
+    options = {
+        "input_path": tmp_path / "missing.csv",
+        "artifact_dir": artifact_dir,
+        "output_path": destination,
+    }
+    with pytest.raises(ValueError, match="artifact files"):
+        if chunked:
+            create_predictions_chunked(**options, chunk_size=1)
+        else:
+            create_predictions(**options)
+    assert destination.read_text(encoding="utf-8") == "saved artifact\n"
+
+
 @pytest.mark.parametrize("identifier", ["id", "test_id"])
 def test_predictions_preserve_mixed_identifier_text(
     tmp_path, pair_frame: pd.DataFrame, identifier: str
