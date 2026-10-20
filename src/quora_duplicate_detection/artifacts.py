@@ -251,7 +251,9 @@ def load_artifact(path: str | Path) -> LoadedArtifact:
         coefficients=arrays["lexical_coefficients"],
         intercept=float(lexical_intercept[0]),
     )
-    fusion_metadata = manifest.get("fusion", {})
+    fusion_metadata = manifest.get("fusion")
+    if not isinstance(fusion_metadata, dict):
+        raise ValueError("artifact fusion metadata is invalid")
     component_names_raw = fusion_metadata.get("component_names")
     if not isinstance(component_names_raw, list):
         raise ValueError("artifact fusion component list is invalid")

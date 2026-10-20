@@ -195,6 +195,16 @@ def test_artifact_rejects_invalid_vectorizer_metadata(
         load_artifact(saved_artifact)
 
 
+@pytest.mark.parametrize("fusion_metadata", [None, [], "lexical"])
+def test_artifact_rejects_non_object_fusion_metadata(saved_artifact, fusion_metadata) -> None:
+    manifest_path = saved_artifact / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["fusion"] = fusion_metadata
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="fusion metadata is invalid"):
+        load_artifact(saved_artifact)
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
