@@ -8,6 +8,8 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- CSV loading preserves numeric-looking question text such as leading zeros;
+  older artifacts trained on such text may need retraining for exact replay
 - External overlap checks ignore shared blank questions but still reject exact blank pairs
 - Duplicate-artifact detection ignores JSON formatting differences in manifests
 - Evaluation reports cannot overwrite saved detector artifact files

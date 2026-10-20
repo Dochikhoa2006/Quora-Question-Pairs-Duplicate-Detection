@@ -8,6 +8,7 @@ from sklearn.model_selection import GroupShuffleSplit
 from quora_duplicate_detection.data import (
     _question_components,
     dataset_fingerprint,
+    load_pairs,
     normalize_question,
     split_labeled_pairs,
     validate_pairs,
@@ -18,6 +19,14 @@ def test_normalize_question_handles_unicode_whitespace_and_missing() -> None:
     assert normalize_question("  CAFÉ\tQuestion  ") == "café question"
     assert normalize_question(None) == ""
     assert normalize_question(np.nan) == ""
+
+
+def test_load_pairs_preserves_numeric_looking_question_text(tmp_path) -> None:
+    path = tmp_path / "pairs.csv"
+    path.write_text("question1,question2\n001,0002\n", encoding="utf-8")
+    frame = load_pairs(path, labeled=False)
+    assert frame.loc[0, "question1"] == "001"
+    assert frame.loc[0, "question2"] == "0002"
 
 
 def test_validate_pairs_fills_missing_questions_and_rejects_bad_labels() -> None:

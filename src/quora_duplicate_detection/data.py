@@ -50,7 +50,15 @@ def validate_pairs(frame: pd.DataFrame, *, labeled: bool) -> pd.DataFrame:
 
 
 def load_pairs(path: str | Path, *, labeled: bool) -> pd.DataFrame:
-    frame = pd.read_csv(path, dtype={"id": "string", "test_id": "string"})
+    frame = pd.read_csv(
+        path,
+        dtype={
+            "question1": "string",
+            "question2": "string",
+            "id": "string",
+            "test_id": "string",
+        },
+    )
     if frame.empty:
         raise ValueError(f"{path} contains no rows")
     return validate_pairs(frame, labeled=labeled)
