@@ -8,6 +8,7 @@ All notable changes are documented here. This project follows
 
 ### Changed
 
+- Semantic scoring validates batch size and embedding vectors before fusion
 - CSV loading preserves numeric-looking question text such as leading zeros;
   older artifacts trained on such text may need retraining for exact replay
 - External overlap checks ignore shared blank questions but still reject exact blank pairs

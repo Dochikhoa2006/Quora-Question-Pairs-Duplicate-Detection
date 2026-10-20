@@ -218,6 +218,8 @@ def _numeric_telemetry(values: dict[str, Any]) -> dict[str, float]:
 
 class SemanticScorer:
     def __init__(self, model_path: str | Path, *, batch_size: int = 64) -> None:
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise ValueError("semantic batch_size must be a positive integer")
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:
@@ -241,7 +243,18 @@ class SemanticScorer:
             normalize_embeddings=True,
             show_progress_bar=False,
         )
-        return np.sum(np.asarray(left) * np.asarray(right), axis=1)
+        left = np.asarray(left, dtype=np.float64)
+        right = np.asarray(right, dtype=np.float64)
+        if (
+            left.ndim != 2
+            or right.shape != left.shape
+            or left.shape[0] != len(clean)
+            or left.shape[1] == 0
+            or not np.isfinite(left).all()
+            or not np.isfinite(right).all()
+        ):
+            raise ValueError("semantic embeddings must have matching finite row vectors")
+        return np.sum(left * right, axis=1)
 
 
 def train_semantic_model(

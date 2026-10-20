@@ -5,16 +5,46 @@ import json
 import sys
 from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from quora_duplicate_detection.semantic import (
+    SemanticScorer,
     _model_file_hashes,
     _numeric_telemetry,
     _prepare_training_run,
     _resolve_base_model,
     verify_semantic_artifact,
 )
+
+
+def test_semantic_scorer_rejects_invalid_batch_size_before_loading_model() -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        SemanticScorer("unused-model", batch_size=0)
+
+
+@pytest.mark.parametrize(
+    "second_embedding",
+    [np.array([[1.0, 0.0, 0.0]]), np.array([[np.nan, 0.0]])],
+)
+def test_semantic_scorer_rejects_invalid_embeddings(second_embedding: np.ndarray) -> None:
+    scorer = SemanticScorer.__new__(SemanticScorer)
+    embeddings = iter((np.array([[1.0, 0.0]]), second_embedding))
+    scorer.model = SimpleNamespace(encode=lambda *args, **kwargs: next(embeddings))
+    scorer.batch_size = 1
+    frame = pd.DataFrame({"question1": ["first"], "question2": ["second"]})
+    with pytest.raises(ValueError, match="matching finite row vectors"):
+        scorer.score(frame)
+
+
+def test_semantic_scorer_keeps_valid_pair_scores() -> None:
+    scorer = SemanticScorer.__new__(SemanticScorer)
+    embeddings = iter((np.array([[1.0, 0.0], [0.0, 1.0]]), np.array([[1.0, 0.0], [1.0, 0.0]])))
+    scorer.model = SimpleNamespace(encode=lambda *args, **kwargs: next(embeddings))
+    scorer.batch_size = 2
+    frame = pd.DataFrame({"question1": ["a", "b"], "question2": ["a", "c"]})
+    np.testing.assert_allclose(scorer.score(frame), [1.0, 0.0])
 
 
 def test_semantic_checksum_verifier_detects_model_changes(tmp_path) -> None:
