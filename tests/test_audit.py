@@ -116,6 +116,17 @@ def test_audit_detects_rehashed_leaky_assignments(grouped_artifact) -> None:
     assert report["checks"]["question_disjoint_when_required"] is False
 
 
+def test_audit_rejects_oversized_assignment_row_number(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    assignments = pd.read_csv(artifact_dir / "split_assignments.csv")
+    assignments["row_number"] = assignments["row_number"].astype(str)
+    assignments.loc[0, "row_number"] = str(10**40)
+    _write_assignments(artifact_dir, assignments)
+
+    with pytest.raises(ValueError, match="invalid row numbers"):
+        audit_split(data_path=data_path, artifact_dir=artifact_dir)
+
+
 def test_replay_detects_complete_component_swap_without_leakage(grouped_artifact) -> None:
     data_path, artifact_dir = grouped_artifact
     assignments = pd.read_csv(artifact_dir / "split_assignments.csv")

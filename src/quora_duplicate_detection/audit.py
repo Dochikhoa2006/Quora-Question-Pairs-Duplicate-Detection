@@ -42,7 +42,10 @@ def _read_assignments(path: Path, rows: int) -> pd.DataFrame:
         raise ValueError("split assignments do not cover every dataset row")
     if not assignments["row_number"].str.fullmatch(r"0|[1-9][0-9]*").all():
         raise ValueError("split assignments contain invalid row numbers")
-    numbers = assignments["row_number"].astype("int64")
+    try:
+        numbers = assignments["row_number"].astype("int64")
+    except OverflowError as exc:
+        raise ValueError("split assignments contain invalid row numbers") from exc
     if sorted(numbers.tolist()) != list(range(rows)):
         raise ValueError("split assignments must contain every row exactly once")
     if not assignments["split"].isin(SPLIT_NAMES).all():
