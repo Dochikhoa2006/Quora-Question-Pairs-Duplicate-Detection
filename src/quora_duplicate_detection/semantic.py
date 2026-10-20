@@ -135,6 +135,44 @@ def _latest_checkpoint(output: Path) -> Path:
     return max(candidates, key=lambda item: item[0])[1]
 
 
+def _validate_training_settings(
+    validation_size: float,
+    random_seed: int,
+    epochs: float,
+    batch_size: int,
+    learning_rate: float,
+) -> None:
+    if (
+        isinstance(validation_size, bool)
+        or not isinstance(validation_size, Real)
+        or not math.isfinite(validation_size)
+        or not 0 < validation_size < 1
+    ):
+        raise ValueError("validation_size must be a finite number between 0 and 1")
+    if (
+        isinstance(random_seed, bool)
+        or not isinstance(random_seed, int)
+        or not 0 <= random_seed < 2**32
+    ):
+        raise ValueError("random_seed must be an integer between 0 and 2**32 - 1")
+    if (
+        isinstance(epochs, bool)
+        or not isinstance(epochs, Real)
+        or not math.isfinite(epochs)
+        or epochs <= 0
+    ):
+        raise ValueError("epochs must be a finite positive number")
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError("batch_size must be a positive integer")
+    if (
+        isinstance(learning_rate, bool)
+        or not isinstance(learning_rate, Real)
+        or not math.isfinite(learning_rate)
+        or learning_rate <= 0
+    ):
+        raise ValueError("learning_rate must be a finite positive number")
+
+
 def _prepare_training_run(
     *,
     frame: pd.DataFrame,
@@ -149,6 +187,7 @@ def _prepare_training_run(
     use_lora: bool,
     resume: bool,
 ) -> tuple[dict[str, str | None], dict[str, str], Path | None]:
+    _validate_training_settings(validation_size, random_seed, epochs, batch_size, learning_rate)
     settings = {
         "schema_version": 1,
         "dataset_fingerprint_sha256": dataset_fingerprint(frame),
@@ -272,6 +311,7 @@ def train_semantic_model(
     resume: bool = False,
 ) -> dict[str, Any]:
     """Fine-tune one documented CoSENT objective with a held-out evaluator."""
+    _validate_training_settings(validation_size, random_seed, epochs, batch_size, learning_rate)
     try:
         import torch
         from datasets import Dataset

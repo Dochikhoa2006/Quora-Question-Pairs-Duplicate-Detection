@@ -15,6 +15,7 @@ from quora_duplicate_detection.semantic import (
     _numeric_telemetry,
     _prepare_training_run,
     _resolve_base_model,
+    train_semantic_model,
     verify_semantic_artifact,
 )
 
@@ -178,6 +179,62 @@ def test_resume_requires_matching_run_and_complete_checkpoint(tmp_path) -> None:
     (model_dir / "config.json").write_text("model-v2", encoding="utf-8")
     with pytest.raises(ValueError, match="base model contents changed"):
         _prepare_training_run(**options, resume=True)
+
+
+@pytest.mark.parametrize(
+    ("setting", "value", "message"),
+    [
+        ("validation_size", 0, "validation_size"),
+        ("validation_size", float("nan"), "validation_size"),
+        ("random_seed", -1, "random_seed"),
+        ("random_seed", 2**32, "random_seed"),
+        ("epochs", 0, "epochs"),
+        ("epochs", float("inf"), "epochs"),
+        ("batch_size", True, "batch_size"),
+        ("batch_size", 0, "batch_size"),
+        ("learning_rate", 0, "learning_rate"),
+        ("learning_rate", float("nan"), "learning_rate"),
+    ],
+)
+def test_invalid_training_settings_do_not_create_run(tmp_path, setting, value, message) -> None:
+    model_dir = tmp_path / "base"
+    model_dir.mkdir()
+    (model_dir / "config.json").write_text("model", encoding="utf-8")
+    output = tmp_path / "run"
+    options = {
+        "frame": pd.DataFrame(
+            {"question1": ["a", "b"], "question2": ["c", "d"], "is_duplicate": [0, 1]}
+        ),
+        "base_model": str(model_dir),
+        "base_revision": None,
+        "validation_size": 0.2,
+        "random_seed": 42,
+        "epochs": 2.0,
+        "batch_size": 8,
+        "learning_rate": 2e-5,
+        "use_lora": False,
+        "resume": False,
+    }
+    options[setting] = value
+    with pytest.raises(ValueError, match=message):
+        _prepare_training_run(**options, output=output)
+    assert not output.exists()
+
+
+def test_invalid_training_settings_are_rejected_before_optional_imports(tmp_path) -> None:
+    with pytest.raises(ValueError, match="epochs"):
+        train_semantic_model(
+            pd.DataFrame(),
+            output_dir=tmp_path / "run",
+            base_model="unused-model",
+            validation_size=0.2,
+            random_seed=42,
+            epochs=0,
+            batch_size=8,
+            learning_rate=2e-5,
+            use_lora=False,
+        )
+    assert not (tmp_path / "run").exists()
 
 
 def test_numeric_telemetry_omits_nonfinite_and_non_numeric_values() -> None:
