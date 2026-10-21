@@ -112,7 +112,14 @@ def compare_artifacts(
                 f"models {seen_manifests[content_hash]} and {label} use the same artifact manifest"
             )
         seen_manifests[content_hash] = label
-        training = artifact.manifest.get("training", {})
+        training = artifact.manifest.get("training")
+        if (
+            not isinstance(training, dict)
+            or not isinstance(training.get("config"), dict)
+            or not isinstance(training.get("dataset_fingerprint_sha256"), str)
+            or re.fullmatch(r"[0-9a-f]{64}", training["dataset_fingerprint_sha256"]) is None
+        ):
+            raise ValueError(f"artifact training metadata is invalid for model: {label}")
         if training.get("dataset_fingerprint_sha256") == fingerprint:
             raise ValueError(f"evaluation data matches training data for model: {label}")
         overlap = None

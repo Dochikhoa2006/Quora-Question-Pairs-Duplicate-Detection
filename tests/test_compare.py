@@ -156,6 +156,28 @@ def test_compare_rejects_duplicate_artifacts(comparison_inputs, tmp_path) -> Non
     assert not output.exists()
 
 
+@pytest.mark.parametrize(
+    "training", [None, {}, {"config": {}, "dataset_fingerprint_sha256": "bad"}]
+)
+def test_compare_rejects_invalid_training_metadata(comparison_inputs, tmp_path, training) -> None:
+    _, external_path, lexical_dir, hybrid_dir = comparison_inputs
+    manifest_path = lexical_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["training"] = training
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    output = tmp_path / "comparison.json"
+
+    with pytest.raises(ValueError, match="training metadata is invalid for model: lexical"):
+        compare_artifacts(
+            data_path=external_path,
+            output_path=output,
+            models={"lexical": lexical_dir, "hybrid": hybrid_dir},
+            baseline="lexical",
+            bootstrap_samples=100,
+        )
+    assert not output.exists()
+
+
 def test_compare_rejects_reformatted_copy_of_artifact(comparison_inputs, tmp_path) -> None:
     _, external_path, lexical_dir, _ = comparison_inputs
     copy_dir = tmp_path / "lexical_copy"
