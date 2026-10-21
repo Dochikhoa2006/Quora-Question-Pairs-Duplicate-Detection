@@ -99,8 +99,10 @@ def _replay_split(
 
 def _values_match(saved: object, replayed: object) -> bool:
     if isinstance(replayed, dict):
-        return isinstance(saved, dict) and all(
-            key in saved and _values_match(saved[key], value) for key, value in replayed.items()
+        return (
+            isinstance(saved, dict)
+            and saved.keys() == replayed.keys()
+            and all(_values_match(saved[key], value) for key, value in replayed.items())
         )
     if isinstance(replayed, list):
         return (

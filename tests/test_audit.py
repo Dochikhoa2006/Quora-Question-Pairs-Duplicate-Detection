@@ -90,6 +90,22 @@ def test_audit_detects_rehashed_incorrect_evaluation(grouped_artifact) -> None:
     assert report["passed"] is False
 
 
+def test_audit_rejects_extra_saved_test_metric(grouped_artifact) -> None:
+    data_path, artifact_dir = grouped_artifact
+    evaluation_path = artifact_dir / "evaluation.json"
+    evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
+    evaluation["test"]["unverified_accuracy"] = 1.0
+    evaluation_path.write_text(json.dumps(evaluation), encoding="utf-8")
+    manifest_path = artifact_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["evaluation.json"] = hashlib.sha256(evaluation_path.read_bytes()).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    report = audit_split(data_path=data_path, artifact_dir=artifact_dir)
+    assert report["evaluation_replay"]["status"] == "mismatch"
+    assert report["passed"] is False
+
+
 def test_audit_detects_changed_decision_threshold(grouped_artifact) -> None:
     data_path, artifact_dir = grouped_artifact
     manifest_path = artifact_dir / "manifest.json"
