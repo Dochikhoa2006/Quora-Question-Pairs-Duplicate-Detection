@@ -80,6 +80,20 @@ def test_cli_train_predict_evaluate_and_inspect(
     manifest = json.loads(capsys.readouterr().out)
     assert manifest["artifact_type"] == "quora_duplicate_detector"
 
+    cli.main(["inspect", "--artifact", str(artifact_dir), "--summary"])
+    summary = json.loads(capsys.readouterr().out)
+    assert summary == {
+        "artifact_type": "quora_duplicate_detector",
+        "schema_version": manifest["schema_version"],
+        "model_kind": "lexical",
+        "training_rows": len(pair_frame),
+        "split_strategy": manifest["training"]["config"]["split_strategy"],
+        "components": ["lexical_probability"],
+        "threshold": manifest["decision"]["threshold"],
+        "threshold_metric": manifest["decision"]["selection_metric"],
+        "dataset_fingerprint_sha256": manifest["training"]["dataset_fingerprint_sha256"],
+    }
+
 
 def test_cli_semantic_command_delegates_without_running_a_model(
     tmp_path,

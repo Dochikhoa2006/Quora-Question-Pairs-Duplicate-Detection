@@ -6,6 +6,7 @@ import argparse
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from quora_duplicate_detection.artifacts import load_artifact
 from quora_duplicate_detection.audit import audit_split
@@ -38,6 +39,24 @@ def _labeled_paths(items: list[str], *, option: str) -> dict[str, str]:
             raise ValueError(f"{option} requires unique LABEL=PATH entries")
         parsed[label] = path
     return parsed
+
+
+def _artifact_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    training = manifest.get("training")
+    training = training if isinstance(training, dict) else {}
+    config = training.get("config")
+    config = config if isinstance(config, dict) else {}
+    return {
+        "artifact_type": manifest["artifact_type"],
+        "schema_version": manifest["schema_version"],
+        "model_kind": training.get("model_kind"),
+        "training_rows": training.get("rows"),
+        "split_strategy": config.get("split_strategy"),
+        "components": manifest["fusion"]["component_names"],
+        "threshold": manifest["decision"]["threshold"],
+        "threshold_metric": manifest["decision"]["selection_metric"],
+        "dataset_fingerprint_sha256": training.get("dataset_fingerprint_sha256"),
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -134,6 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     inspect = subparsers.add_parser("inspect", help="verify and print an artifact manifest")
     inspect.add_argument("--artifact", required=True, type=Path)
+    inspect.add_argument("--summary", action="store_true", help="print key artifact details only")
     verify_semantic = subparsers.add_parser(
         "verify-semantic", help="verify saved semantic model checksums"
     )
@@ -235,7 +255,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             )
         )
     elif args.command == "inspect":
-        _print_json(load_artifact(args.artifact).manifest)
+        manifest = load_artifact(args.artifact).manifest
+        _print_json(_artifact_summary(manifest) if args.summary else manifest)
     elif args.command == "verify-semantic":
         _print_json(
             verify_signed_semantic_artifact(args.artifact, args.public_key)
