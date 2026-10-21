@@ -124,6 +124,8 @@ class PairFeatureExtractor:
         if self.vectorizer is None:
             raise RuntimeError("feature extractor is not fitted")
         question1, question2 = self._normalized_questions(frame)
+        if frame.empty:
+            return np.empty((0, len(FEATURE_NAMES)), dtype=np.float64)
         tokens1 = [tokenize(text) for text in question1]
         tokens2 = [tokenize(text) for text in question2]
 

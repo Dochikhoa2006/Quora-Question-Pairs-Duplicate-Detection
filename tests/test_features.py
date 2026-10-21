@@ -41,6 +41,16 @@ def test_tiny_empty_corpus_uses_safe_tfidf_fallback() -> None:
     assert features.shape == (2, len(FEATURE_NAMES))
 
 
+def test_fitted_extractor_returns_feature_columns_for_empty_batch() -> None:
+    training = pd.DataFrame({"question1": ["first"], "question2": ["second"]})
+    extractor = PairFeatureExtractor(min_df=1).fit(training)
+    empty = training.iloc[:0]
+
+    features = extractor.transform(empty)
+    assert features.shape == (0, len(FEATURE_NAMES))
+    assert features.dtype == np.float64
+
+
 def test_unfitted_and_invalid_feature_state_is_rejected() -> None:
     extractor = PairFeatureExtractor()
     frame = pd.DataFrame({"question1": ["a"], "question2": ["b"]})
