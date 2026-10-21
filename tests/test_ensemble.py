@@ -85,6 +85,36 @@ def test_fusion_requires_the_components_it_was_trained_with() -> None:
         )
 
 
+def test_fusion_rejects_mismatched_score_and_label_shapes() -> None:
+    with pytest.raises(ValueError, match="one-dimensional with the same shape"):
+        ScoreFusion.fit(
+            lexical_scores=np.array([0.2, 0.8]),
+            semantic_scores=np.array([0.3]),
+            labels=np.array([0, 1]),
+            logistic_c=1.0,
+            max_iter=100,
+            random_seed=42,
+        )
+    with pytest.raises(ValueError, match="labels must be one-dimensional"):
+        ScoreFusion.fit(
+            lexical_scores=np.array([0.2, 0.8]),
+            semantic_scores=None,
+            labels=np.array([[0], [1]]),
+            logistic_c=1.0,
+            max_iter=100,
+            random_seed=42,
+        )
+    fusion = ScoreFusion(
+        component_names=("lexical_probability", "semantic_cosine"),
+        coefficients=np.array([1.0, 1.0]),
+        intercept=0.0,
+    )
+    with pytest.raises(ValueError, match="one-dimensional with the same shape"):
+        fusion.predict_proba(
+            lexical_scores=np.array([0.2, 0.8]), semantic_scores=np.array([[0.3], [0.7]])
+        )
+
+
 @pytest.mark.parametrize("invalid_score", [np.nan, np.inf])
 def test_fusion_rejects_nonfinite_prediction_scores(invalid_score: float) -> None:
     fusion = ScoreFusion(

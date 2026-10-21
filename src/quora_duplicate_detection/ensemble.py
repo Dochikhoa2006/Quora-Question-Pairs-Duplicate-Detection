@@ -13,6 +13,17 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 ThresholdMetric = Literal["f1", "accuracy", "balanced_accuracy"]
 
 
+def _component_matrix(components: list[np.ndarray]) -> np.ndarray:
+    if any(
+        component.ndim != 1 or component.shape != components[0].shape for component in components
+    ):
+        raise ValueError("component scores must be one-dimensional with the same shape")
+    matrix = np.column_stack(components)
+    if not np.isfinite(matrix).all():
+        raise ValueError("component scores contain non-finite values")
+    return matrix
+
+
 @dataclass
 class ScoreFusion:
     component_names: tuple[str, ...]
@@ -35,9 +46,10 @@ class ScoreFusion:
         if semantic_scores is not None:
             components.append(np.asarray(semantic_scores, dtype=np.float64))
             names.append("semantic_cosine")
-        matrix = np.column_stack(components)
-        if not np.isfinite(matrix).all():
-            raise ValueError("component scores contain non-finite values")
+        matrix = _component_matrix(components)
+        labels = np.asarray(labels)
+        if labels.ndim != 1 or labels.shape != (len(matrix),):
+            raise ValueError("labels must be one-dimensional and match component scores")
 
         classifier = LogisticRegression(
             C=logistic_c,
@@ -65,11 +77,9 @@ class ScoreFusion:
             components.append(np.asarray(semantic_scores, dtype=np.float64))
         elif semantic_scores is not None:
             raise ValueError("this artifact was trained without semantic scores")
-        matrix = np.column_stack(components)
+        matrix = _component_matrix(components)
         if matrix.shape[1] != len(self.component_names):
             raise ValueError("component score shape does not match the fusion model")
-        if not np.isfinite(matrix).all():
-            raise ValueError("component scores contain non-finite values")
         return expit(matrix @ self.coefficients + self.intercept)
 
     def validate(self) -> None:
