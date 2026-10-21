@@ -302,6 +302,8 @@ def create_predictions_chunked(
                 },
             ):
                 chunk = validate_pairs(raw_chunk, labeled=False)
+                if chunk.empty:
+                    continue
                 lexical_scores = artifact.lexical.predict_proba(chunk)
                 semantic_scores = scorer.score(chunk) if scorer is not None else None
                 probabilities = artifact.fusion.predict_proba(

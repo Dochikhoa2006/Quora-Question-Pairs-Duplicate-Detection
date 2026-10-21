@@ -157,6 +157,33 @@ def test_chunked_predictions_preserve_existing_output_on_later_failure(
     assert not list(tmp_path.glob(".qqdup-*.csv"))
 
 
+def test_chunked_predictions_reject_header_only_input_without_replacing_output(
+    tmp_path, pair_frame: pd.DataFrame
+) -> None:
+    training_csv = tmp_path / "train.csv"
+    input_csv = tmp_path / "empty.csv"
+    artifact_dir = tmp_path / "artifact"
+    output_csv = tmp_path / "output.csv"
+    pair_frame.to_csv(training_csv, index=False)
+    input_csv.write_text("question1,question2\n", encoding="utf-8")
+    output_csv.write_text("previous result\n", encoding="utf-8")
+    train_pipeline(
+        data_path=training_csv,
+        output_dir=artifact_dir,
+        config=TrainingConfig(tfidf_min_df=1),
+    )
+
+    with pytest.raises(ValueError, match="contains no rows"):
+        create_predictions_chunked(
+            input_path=input_csv,
+            artifact_dir=artifact_dir,
+            output_path=output_csv,
+            chunk_size=3,
+        )
+    assert output_csv.read_text(encoding="utf-8") == "previous result\n"
+    assert not list(tmp_path.glob(".qqdup-*.csv"))
+
+
 def test_regular_predictions_preserve_existing_output_if_replace_fails(
     tmp_path, pair_frame: pd.DataFrame, monkeypatch
 ) -> None:
